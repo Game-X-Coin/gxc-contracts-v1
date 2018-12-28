@@ -36,12 +36,6 @@ void contract::newaccount(name creator, name newacnt, ignore<authority> owner, i
    }
 }
 
-void contract::updateauth(name account, name permission, ignore<name> parent, ignore<authority> auth) {
-   if (!starts_with(account, "gxc.")) {
-      eosio_assert(!starts_with(permission, "gxc."), "permission names with 'gxc.' prefix are reserved");
-   }
-}
-
 void contract::setabi(name account, const std::vector<char>& abi) {
    eosio_assert(!starts_with(account, "gxc."), "not allowed to normal account");
 

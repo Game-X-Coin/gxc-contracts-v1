@@ -78,7 +78,7 @@ public:
    void updateauth (name account,
                     name permission,
                     ignore<name> parent,
-                    ignore<authority> auth);
+                    ignore<authority> auth) {}
 
    [[eosio::action]]
    void deleteauth (ignore<name> account,
