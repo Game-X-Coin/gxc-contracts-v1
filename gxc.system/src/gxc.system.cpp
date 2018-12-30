@@ -171,5 +171,4 @@ void contract::init(unsigned_int version, symbol core) {
 GXC_DISPATCH(gxc::system::contract,
    (newaccount)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)(setcode)
    (init)(setram)(setramrate)(setparams)(setpriv)(setalimits)
-   (buyrambytes)(buyram)(sellram)
 )
