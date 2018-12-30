@@ -32,7 +32,7 @@ void contract::newaccount(name creator, name newacnt, ignore<authority> owner, i
          res.cpu_weight = asset(0, system::contract::get_core_symbol());
       });
 
-      set_resource_limits(newacnt.value, 0, 0, 0);
+      set_resource_limits(newacnt.value, 0 + ram_gift_bytes, 0, 0);
    }
 }
 

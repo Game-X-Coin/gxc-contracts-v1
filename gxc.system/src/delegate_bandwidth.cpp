@@ -25,7 +25,6 @@ using std::map;
 using std::pair;
 
 static constexpr uint32_t refund_delay_sec = 3 * 24 * 3600;
-static constexpr int64_t  ram_gift_bytes = 1400;
 
 struct [[eosio::table, eosio::contract("gxc.system")]] user_resources {
    name          owner;

@@ -45,6 +45,8 @@ public:
    static constexpr symbol ramcore_symbol = symbol(symbol_code("RAMCORE"), 4);
    static constexpr symbol ram_symbol = symbol(symbol_code("RAM"), 0);
 
+   static constexpr int64_t ram_gift_bytes = 3 * 1024; // 3KiB
+
    static symbol get_core_symbol(name system_account = system::account) {
       rammarket rm(system_account, system_account.value);
       const static auto sym = get_core_symbol( rm );
