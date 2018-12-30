@@ -40,7 +40,7 @@ public:
    ~contract();
 
    static constexpr name ram_account {"gxc.ram"_n};
-   static constexpr name ramfee_account {"gxc.ram"_n};
+   static constexpr name ramfee_account {"gxc.ramfee"_n};
    static constexpr name stake_account {"gxc.stake"_n};
    static constexpr symbol ramcore_symbol = symbol(symbol_code("RAMCORE"), 4);
    static constexpr symbol ram_symbol = symbol(symbol_code("RAM"), 0);
