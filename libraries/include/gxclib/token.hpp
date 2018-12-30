@@ -16,7 +16,6 @@ namespace gxc { namespace token {
 using namespace eosio;
 
 constexpr name account = "gxc.token"_n;
-constexpr name fee_account = "token.fee"_n;
 constexpr name system_token = "token.sys"_n;
 constexpr name standard_token = "token.std"_n;
 
