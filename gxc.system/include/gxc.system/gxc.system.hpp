@@ -17,7 +17,7 @@ using namespace eosio::chain;
 
 namespace gxc { namespace system {
 
-struct [[eosio::table("global"), eosio::contract("gxc.system")]] gxc_global_state : eosio::blockchain_parameters {
+struct [[eosio::table("global"), eosio::contract("gxc.system")]] gxc_global_state : gxc::blockchain_parameters {
    uint64_t free_ram()const { return max_ram_size - total_ram_bytes_reserved; }
 
    uint64_t max_ram_size = 64ll * 1024 * 1024 * 1024; // 64 GiB
@@ -28,7 +28,7 @@ struct [[eosio::table("global"), eosio::contract("gxc.system")]] gxc_global_stat
    block_timestamp last_block_num;
    uint8_t  revision = 0;
 
-   EOSLIB_SERIALIZE_DERIVED(gxc_global_state, eosio::blockchain_parameters,
+   EOSLIB_SERIALIZE_DERIVED(gxc_global_state, gxc::blockchain_parameters,
                             (max_ram_size)(total_ram_bytes_reserved)(total_ram_stake)
                             (new_ram_per_block)(last_ram_increase)(last_block_num)(revision)
    )
@@ -66,7 +66,7 @@ public:
 
    [[eosio::action]] void setram (uint64_t max_ram_size);
    [[eosio::action]] void setramrate (uint16_t bytes_per_block);
-   [[eosio::action]] void setparams (const eosio::blockchain_parameters& params);
+   [[eosio::action]] void setparams (const gxc::blockchain_parameters& params);
    [[eosio::action]] void setpriv (name account, uint8_t is_priv);
    [[eosio::action]] void updtrevision (uint8_t revision);
 

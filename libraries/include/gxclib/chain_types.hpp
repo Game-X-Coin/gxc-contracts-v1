@@ -5,8 +5,7 @@
 #pragma once
 
 #include <eosiolib/eosio.hpp>
-#include <eosiolib/producer_schedule.hpp>
-#include <eosiolib/privileged.hpp>
+#include <gxclib/producer_schedule.hpp>
 
 namespace eosio { namespace chain {
 

@@ -92,9 +92,9 @@ void contract::setramrate( uint16_t bytes_per_block ) {
    _gstate.new_ram_per_block = bytes_per_block;
 }
 
-void contract::setparams( const eosio::blockchain_parameters& params ) {
+void contract::setparams( const gxc::blockchain_parameters& params ) {
    require_auth( _self );
-   (eosio::blockchain_parameters&)(_gstate) = params;
+   (gxc::blockchain_parameters&)(_gstate) = params;
    eosio_assert( 3 <= _gstate.max_authority_depth, "max_authority_depth should be at least 3" );
    set_blockchain_parameters( params );
 }
