@@ -193,16 +193,16 @@ void stdtoken::refresh_drawout(withdrawtable& witd, name owner, time_point_sec c
 void stdtoken::deposit(name owner, asset quantity, name issuer) {
    _check_args(quantity);
 
-   require_auth(owner);
-
    withdrawtable witd(_self, owner.value);
    auto extsym = witd.get_index<"extsymbol"_n>();
    auto req = extsym.find(token::extended_symbol_code(quantity.symbol.code(), issuer));
 
    if (req == extsym.end()) {
+      require_auth(owner);
       sub_balance(owner, quantity, issuer);
    } else {
       auto leftover = req->quantity - quantity;
+      eosio_assert((leftover.amount >= 0 && has_auth(issuer)) || has_auth(owner), "missing required authority");
       if (leftover.amount > 0) {
          extsym.modify(req, same_payer, [&](auto& w) {
             w.quantity -= quantity;
