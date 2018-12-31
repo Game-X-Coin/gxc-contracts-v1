@@ -121,7 +121,7 @@ void contract::init(unsigned_int version, symbol core) {
 
    auto system_token_supply = token::get_supply(_self, core.code());
    eosio_assert(system_token_supply.symbol == core, "specified core symbol does not exist (precision mismatch)");
-   eosio_assert(system_token_supply.amount > 0, "system token supply must be greater than 0");
+   eosio_assert(system_token_supply.amount >= 0, "system token supply must be greater than 0");
 
    _rammarket.emplace(_self, [&](auto& m) {
       m.supply.amount = 100'000'000'000'000ll;
