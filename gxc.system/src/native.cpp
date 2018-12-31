@@ -19,20 +19,20 @@ void contract::onblock(ignore<block_header> header) {
    _gstate.last_block_num = timestamp;
 }
 
-void contract::newaccount(name creator, name newacnt, ignore<authority> owner, ignore<authority> active) {
+void contract::newaccount(name creator, name name, ignore<authority> owner, ignore<authority> active) {
    if (creator != _self) {
-      eosio_assert(newacnt.length() >= 6, "the names shorter than 6 are reserved");
-      eosio_assert(!has_dot(newacnt), "user name cannot contain dot");
+      eosio_assert(name.length() >= 6, "a name shorter than 6 is reserved");
+      eosio_assert(!has_dot(name), "user account name cannot contain dot");
 
-      user_resources_table userres(_self, newacnt.value);
+      user_resources_table userres(_self, name.value);
 
-      userres.emplace(newacnt, [&](auto& res) {
-         res.owner = newacnt;
+      userres.emplace(name, [&](auto& res) {
+         res.owner = name;
          res.net_weight = asset(0, system::contract::get_core_symbol());
          res.cpu_weight = asset(0, system::contract::get_core_symbol());
       });
 
-      set_resource_limits(newacnt.value, 0 + ram_gift_bytes, 0, 0);
+      set_resource_limits(name.value, 0 + ram_gift_bytes, 0, 0);
    }
 }
 

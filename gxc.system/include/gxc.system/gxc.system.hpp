@@ -61,8 +61,8 @@ public:
    [[eosio::action]] void buyrambytes (name payer, name receiver, uint32_t bytes);
    [[eosio::action]] void sellram (name account, int64_t bytes);
    [[eosio::action]] void refund (name owner);
-   [[eosio::action]] void delegatebw (name from, name receiver, asset net_quant, asset cpu_quant, bool transfer);
-   [[eosio::action]] void undelegatebw (name from, name receiver, asset net_qant, asset cpu_quant);
+   [[eosio::action]] void delegatebw (name from, name receiver, asset stake_net_quantity, asset stake_cpu_quantity, bool transfer);
+   [[eosio::action]] void undelegatebw (name from, name receiver, asset unstake_net_quantity, asset unstake_cpu_quantity);
 
    [[eosio::action]] void setram (uint64_t max_ram_size);
    [[eosio::action]] void setramrate (uint16_t bytes_per_block);
@@ -73,7 +73,7 @@ public:
    // native action handelrs
    [[eosio::action]]
    void newaccount (name creator,
-                    name newacnt,
+                    name name,
                     ignore<authority> owner,
                     ignore<authority> active);
    [[eosio::action]]
