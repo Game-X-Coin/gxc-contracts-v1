@@ -11,6 +11,7 @@
 #include <gxclib/system.hpp>
 #include <gxclib/chain_types.hpp>
 #include <gxclib/exchange_state.hpp>
+#include <gxclib/name.hpp>
 
 using namespace eosio;
 using namespace eosio::chain;
@@ -127,6 +128,10 @@ private:
       auto itr = rm.find(ramcore_symbol.raw());
       eosio_assert(itr != rm.end(), "system contract must first be initialized");
       return itr->quote.balance.symbol;
+   }
+
+   static bool is_admin(const name& name) {
+      return (name == system::account) || has_dot(name);
    }
 
    static gxc_global_state get_default_parameters();

@@ -9,6 +9,8 @@
 
 namespace gxc {
 
+using eosio::name;
+
 bool starts_with(const name& input, const name& test) {
    uint64_t mask = 0xF800000000000000ull;
    auto maxlen = 12;

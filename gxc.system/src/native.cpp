@@ -3,7 +3,6 @@
  * @copyright defined in gxc/LICENSE
  */
 #include <gxc.system/gxc.system.hpp>
-#include <gxclib/name.hpp>
 
 #include "exchange_state.cpp"
 #include "delegate_bandwidth.cpp"
@@ -37,7 +36,7 @@ void contract::newaccount(name creator, name name, ignore<authority> owner, igno
 }
 
 void contract::setabi(name account, const std::vector<char>& abi) {
-   eosio_assert(has_dot(account), "not allowed to normal account");
+   eosio_assert(is_admin(account), "not allowed to normal account");
 
    eosio::multi_index<"abihash"_n, abi_hash> table(_self, _self.value);
 
@@ -55,7 +54,7 @@ void contract::setabi(name account, const std::vector<char>& abi) {
 }
 
 void contract::setcode(name account, uint8_t vmtype, uint8_t vmversion, const std::vector<char>& code) {
-   eosio_assert(has_dot(account), "not allowed to normal account");
+   eosio_assert(is_admin(account), "not allowed to normal account");
 }
 
 } }
