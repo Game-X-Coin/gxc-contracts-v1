@@ -1,7 +1,7 @@
 /**
  *  @file
  *  @copyright defined in gxc/LICENSE
- */ 
+ */
 #include <gxc.stdtoken/gxc.stdtoken.hpp>
 
 namespace gxc {
@@ -27,12 +27,9 @@ void stdtoken::create(name issuer, asset maximum_supply) {
 
 
 void stdtoken::issue(name to, asset quantity, string memo, name issuer) {
-   _check_args(quantity, memo);
-
    statstable stats(_self, issuer.value);
    const auto& st = stats.get(quantity.symbol.code().raw(), "token with symbol does not exist, create token before issue");
 
-   token::validate(st.issuer);
    eosio_assert(game::is_game(st.issuer), "issuer should be a game account");
 
    eosio_assert(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
@@ -42,12 +39,10 @@ void stdtoken::issue(name to, asset quantity, string memo, name issuer) {
       s.supply += quantity;
    });
 
-   add_balance(st.issuer, quantity, st.issuer);
-
-   if (to != st.issuer) {
-      action(permission_level(_self, system::active_permission),
-         token::account, "transfer"_n, std::make_tuple(st.issuer, to, quantity, memo, st.issuer)
-      ).send();
+   if (to == st.issuer) {
+      add_balance(to, quantity, st.issuer);
+   } else {
+      add_deposit(to, quantity, st.issuer);
    }
 }
 
@@ -78,12 +73,15 @@ void stdtoken::transfer(name from, name to, asset quantity, string memo, name is
    const auto& st = stats.get(quantity.symbol.code().raw());
 
    token::validate();
-   bool has_game_auth = (to == st.issuer) && has_auth(st.issuer) && game::is_game(st.issuer);
+   bool has_game_auth = has_auth(st.issuer) &&
+                        (((to == st.issuer) && game::is_game(st.issuer)) || (from == "gxc.null"_n));
 
    eosio_assert(has_game_auth || has_auth(from), "missing required authority");
    eosio_assert(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
 
-   if (from == st.issuer) {
+   if (from == "gxc.null"_n) {
+      issue(to, quantity, memo, issuer);
+   } else if (from == st.issuer) {
       sub_balance(from, quantity, issuer);
       add_deposit(to, quantity, issuer);
    } else if (to == st.issuer) {
@@ -274,4 +272,4 @@ void stdtoken::drawout(name owner) {
 
 }
 
-GXC_DISPATCH_SAFE(gxc::stdtoken, (create)(issue)(transfer)(retire)(deposit)(withdraw)(drawout))
+GXC_DISPATCH_SAFE(gxc::stdtoken, (create)(transfer)(retire)(deposit)(withdraw)(drawout))

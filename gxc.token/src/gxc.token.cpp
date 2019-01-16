@@ -26,24 +26,11 @@ void contract::create(name issuer, asset maximum_supply, binary_extension<name> 
    ).send();
 }
 
-void contract::issue(name to, asset quantity, string memo, binary_extension<name> issuer) {
-   auto _issuer = issuer.value_or(static_cast<name>(system::account));
-   eosio_assert(has_admin_auth("issue"_n) || has_auth(_issuer), "missing required authority");
-
-   auto ttype = get_token_type(quantity.symbol.code(), _issuer);
-   eosio_assert(ttype != name(), "not registered token");
-
-   action( {{_self, system::active_permission}, {_issuer, system::active_permission}},
-      ttype, "issue"_n, std::make_tuple(to, quantity, memo, _issuer)
-   ).send();
-}
-
 void contract::retire(asset quantity, string memo, binary_extension<name> issuer) {
    auto _issuer = issuer.value_or(static_cast<name>(system::account));
    eosio_assert(has_admin_auth("retire"_n) || has_auth(_issuer), "missing required authority");
 
    auto ttype = get_token_type(quantity.symbol.code(), _issuer);
-   eosio_assert(ttype != name(), "not registered token");
 
    action( {{_self, system::active_permission}, {_issuer, system::active_permission}},
       ttype, "retire"_n, std::make_tuple(quantity, memo, _issuer)
@@ -55,12 +42,11 @@ void contract::transfer(name from, name to, asset quantity, string memo, binary_
 
    auto auth = from;
    if (!has_admin_auth("transfer"_n) && !has_auth(auth)) {
-      auth = to;
+      auth = (from == "gxc.null"_n) ? _issuer : to;
       eosio_assert(has_auth(auth), "missing required authority");
    }
 
    auto ttype = get_token_type(quantity.symbol.code(), _issuer);
-   eosio_assert(ttype != name(), "not registered token");
 
    action( {{_self, system::active_permission}, {auth, system::active_permission}},
       ttype, "transfer"_n, std::make_tuple(from, to, quantity, memo, _issuer)
@@ -87,4 +73,4 @@ void contract::setadmin(name account_name, name action_name, bool is_admin) {
 
 } }
 
-EOSIO_DISPATCH(gxc::token::contract, (create)(issue)(transfer)(retire)(setadmin))
+EOSIO_DISPATCH(gxc::token::contract, (create)(transfer)(retire)(setadmin))

@@ -26,12 +26,8 @@ void systoken::create(name issuer, asset maximum_supply) {
 
 
 void systoken::issue(name to, asset quantity, string memo, name issuer) {
-   _check_args(quantity, memo);
-
    statstable stats(_self, issuer.value);
    const auto& st = stats.get(quantity.symbol.code().raw(), "token with symbol does not exist, create token before issue");
-
-   token::validate(st.issuer);
 
    eosio_assert(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
    eosio_assert(quantity.amount <= st.max_supply.amount - st.supply.amount, "quantity exceeds available supply");
@@ -40,13 +36,7 @@ void systoken::issue(name to, asset quantity, string memo, name issuer) {
       s.supply += quantity;
    });
 
-   add_balance(st.issuer, quantity);
-
-   if (to != st.issuer) {
-      action(permission_level(_self, system::active_permission),
-         token::account, "transfer"_n, std::make_tuple(st.issuer, to, quantity, memo, st.issuer)
-      ).send();
-   }
+   add_balance(to, quantity);
 }
 
 void systoken::retire(asset quantity, string memo, name issuer) {
@@ -69,7 +59,8 @@ void systoken::transfer(name from, name to, asset quantity, string memo, name is
    _check_args(quantity, memo);
 
    eosio_assert(from != to, "cannot transfer to self");
-   token::validate(from);
+   token::validate();
+   eosio_assert(has_auth(from) || (from == "gxc.null"_n && has_auth(issuer)), "missing required authority");
    eosio_assert(is_account( to ), "to account does not exist");
 
    statstable stats(_self, issuer.value);
@@ -77,8 +68,12 @@ void systoken::transfer(name from, name to, asset quantity, string memo, name is
 
    eosio_assert(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
 
-   sub_balance(from, quantity);
-   add_balance(to, quantity);
+   if (from == "gxc.null"_n) {
+      issue(to, quantity, memo, issuer);
+   } else {
+      sub_balance(from, quantity);
+      add_balance(to, quantity);
+   }
 
    //require_recipient(from);
    //require_recipient(to);
@@ -112,4 +107,4 @@ void systoken::add_balance(name owner, asset value) {
 
 }
 
-EOSIO_DISPATCH(gxc::systoken, (create)(issue)(transfer)(retire))
+EOSIO_DISPATCH(gxc::systoken, (create)(transfer)(retire))

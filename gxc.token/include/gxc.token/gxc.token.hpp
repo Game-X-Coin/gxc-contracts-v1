@@ -20,7 +20,6 @@ public:
    using eosio::contract::contract;
 
    [[eosio::action]] void create (name issuer, asset maximum_supply, binary_extension<name> type);
-   [[eosio::action]] void issue (name to, asset quantity, string memo, binary_extension<name> issuer);
    [[eosio::action]] void retire (asset quantity, string memo, binary_extension<name> issuer);
    [[eosio::action]] void transfer (name from, name to, asset quantity, string memo, binary_extension<name> issuer);
    [[eosio::action]] void setadmin (name account_name, name action_name, bool is_admin);

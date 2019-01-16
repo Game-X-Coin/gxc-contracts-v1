@@ -5,12 +5,11 @@
 #pragma once
 
 #include <eosiolib/eosio.hpp>
-#include <eosiolib/asset.hpp> 
+#include <eosiolib/asset.hpp>
 #include <eosiolib/binary_extension.hpp>
 #include <eosiolib/singleton.hpp>
 
 #include <gxclib/token.hpp>
-#include <gxclib/game.hpp>
 
 using namespace eosio;
 using std::string;
@@ -22,11 +21,12 @@ public:
    using contract::contract;
 
    void create (name issuer, asset maximum_supply);
-   void issue (name to, asset quantity, string memo, name issuer);
    void retire (asset quantity, string memo, name issuer);
    void transfer (name from, name to, asset quantity, string memo, name issuer);
 
 private:
+   void issue (name to, asset quantity, string memo, name issuer);
+
    struct [[eosio::table("accounts"), eosio::contract("gxc.systoken")]] accountsrow {
       asset balance;
 

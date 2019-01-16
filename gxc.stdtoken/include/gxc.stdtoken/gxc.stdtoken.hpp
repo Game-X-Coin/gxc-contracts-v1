@@ -25,7 +25,6 @@ public:
    using contract::contract;
 
    void create (name issuer, asset maximum_supply);
-   void issue (name to, asset quantity, string memo, name issuer);
    void retire (asset quantity, string memo, name issuer);
    void transfer (name from, name to, asset quantity, string memo, name issuer);
    [[eosio::action]] void deposit (name owner, asset quantity, name issuer);
@@ -33,6 +32,8 @@ public:
    void drawout (name owner);
 
 private:
+   void issue (name to, asset quantity, string memo, name issuer);
+
    struct [[eosio::table("accounts"), eosio::contract("gxc.stdtoken")]] accountsrow {
       asset     balance;
       asset     deposit;
