@@ -4,6 +4,7 @@
  */
 
 #include <gxc.token/gxc.token.hpp>
+#include <gxclib/grc2.hpp>
 
 namespace gxc { namespace token {
 
@@ -62,9 +63,10 @@ void contract::transfer(name from, name to, asset quantity, string memo, binary_
    auto ttype = get_token_type(quantity.symbol.code(), _issuer);
    eosio_assert(ttype != name(), "not registered token");
 
-   action( {{_self, system::active_permission}, {auth, system::active_permission}},
-      ttype, "transfer"_n, std::make_tuple(from, to, quantity, memo, _issuer)
-   ).send();
+   INLINE_ACTION_SENDER(gxc::grc2, transfer)(
+      ttype, {{_self, system::active_permission}, {auth, system::active_permission}},
+      {from, to, quantity, memo, _issuer}
+   );
 }
 
 void contract::setadmin(name account_name, name action_name, bool is_admin) {

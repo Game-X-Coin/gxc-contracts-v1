@@ -1,0 +1,17 @@
+cmake_minimum_required( VERSION 3.5 )
+
+project(contracts)
+
+set(EOSIO_WASM_OLD_BEHAVIOR "Off")
+find_package(eosio.cdt)
+
+add_subdirectory(eosio.bios)
+add_subdirectory(eosio.msig)
+add_subdirectory(eosio.wrap)
+add_subdirectory(gxc.system)
+add_subdirectory(gxc.token)
+add_subdirectory(gxc.systoken)
+add_subdirectory(gxc.stdtoken)
+add_subdirectory(gxc.escrow)
+add_subdirectory(gxc.user)
+add_subdirectory(gxc.game)

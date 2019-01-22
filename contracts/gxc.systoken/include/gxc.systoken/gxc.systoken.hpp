@@ -21,10 +21,10 @@ class [[eosio::contract("gxc.systoken")]] systoken : public contract  {
 public:
    using contract::contract;
 
-   void create (name issuer, asset maximum_supply);
+   [[eosio::action]] void create (name issuer, asset maximum_supply);
    void issue (name to, asset quantity, string memo, name issuer);
    void retire (asset quantity, string memo, name issuer);
-   void transfer (name from, name to, asset quantity, string memo, name issuer);
+   [[eosio::action]] void transfer (name from, name to, asset quantity, string memo, name issuer);
 
 private:
    struct [[eosio::table("accounts"), eosio::contract("gxc.systoken")]] accountsrow {

@@ -1,11 +1,26 @@
 cmake_minimum_required(VERSION 3.5)
-project(gxc_contracts VERSION 1.5.0)
 
-set(EOSIO_CDT_VERSION_MIN "1.4")
-set(EOSIO_CDT_VERSION_SOFT_MAX "1.4")
-#set(EOSIO_CDT_VERSION_HARD_MAX "")
+project(gxc_contracts)
+
+set(VERSION_MAJOR 1)
+set(VERSION_MINOR 5)
+set(VERSION_PATCH 0)
+
+if (VERSION_SUFFIX)
+   set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-${VERSION_SUFFIX}")
+else()
+   set(VERSION_FULL "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+endif()
+
+include(ExternalProject)
 
 find_package(eosio.cdt)
+
+message(STATUS "Building eosio.contracts v${VERSION_FULL}")
+
+set(EOSIO_CDT_VERSION_MIN "1.5")
+set(EOSIO_CDT_VERSION_SOFT_MAX "1.5")
+#set(EOSIO_CDT_VERSION_HARD_MAX "")
 
 ### Check the version of eosio.cdt
 set(VERSION_MATCH_ERROR_MSG "")
@@ -29,17 +44,17 @@ else()
    set(TEST_BUILD_TYPE ${CMAKE_BUILD_TYPE})
 endif()
 
-
-add_subdirectory(eosio.bios)
-add_subdirectory(eosio.msig)
-add_subdirectory(eosio.wrap)
-add_subdirectory(gxc.game)
-add_subdirectory(gxc.user)
-add_subdirectory(gxc.token)
-add_subdirectory(gxc.systoken)
-add_subdirectory(gxc.stdtoken)
-add_subdirectory(gxc.escrow)
-add_subdirectory(gxc.system)
+ExternalProject_Add(
+   contracts_project
+   SOURCE_DIR ${CMAKE_SOURCE_DIR}/contracts
+   BINARY_DIR ${CMAKE_BINARY_DIR}/contracts
+   CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${EOSIO_CDT_ROOT}/lib/cmake/eosio.cdt/EosioWasmToolchain.cmake
+   UPDATE_COMMAND ""
+   PATCH_COMMAND ""
+   TEST_COMMAND ""
+   INSTALL_COMMAND ""
+   BUILD_ALWAYS 1
+)
 
 if (APPLE)
    set(OPENSSL_ROOT "/usr/local/opt/openssl")
@@ -48,5 +63,25 @@ elseif (UNIX)
 endif()
 set(SECP256K1_ROOT "/usr/local")
 
-# FIXME: needs to update unit tests
-#include(UnitTestsExternalProject.txt)
+if (APPLE)
+   set(OPENSSL_ROOT "/usr/local/opt/openssl")
+elseif (UNIX)
+   set(OPENSSL_ROOT "/usr/include/openssl")
+endif()
+set(SECP256K1_ROOT "/usr/local")
+
+if (FALSE)
+string(REPLACE ";" "|" TEST_FRAMEWORK_PATH "${CMAKE_FRAMEWORK_PATH}")
+string(REPLACE ";" "|" TEST_MODULE_PATH "${CMAKE_MODULE_PATH}")
+
+ExternalProject_Add(
+  contracts_unit_tests
+  LIST_SEPARATOR | # Use the alternate list separator
+  CMAKE_ARGS -DCMAKE_BUILD_TYPE=${TEST_BUILD_TYPE} -DCMAKE_FRAMEWORK_PATH=${TEST_FRAMEWORK_PATH} -DCMAKE_MODULE_PATH=${TEST_MODULE_PATH} -DEOSIO_ROOT=${EOSIO_ROOT} -DLLVM_DIR=${LLVM_DIR}
+  SOURCE_DIR ${CMAKE_SOURCE_DIR}/tests
+  BINARY_DIR ${CMAKE_BINARY_DIR}/tests
+  BUILD_ALWAYS 1
+  TEST_COMMAND   ""
+  INSTALL_COMMAND ""
+)
+endif()
