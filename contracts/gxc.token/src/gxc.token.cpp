@@ -29,6 +29,7 @@ namespace gxc {
    }
 
    void token_contract::setacntopts(name account, name issuer, symbol symbol, std::vector<key_value> opts) {
+      token(_self, issuer, symbol.code().raw()).get_account(account).setopts(opts);
    }
 
    void token_contract::transfer(name from, name to, extended_asset quantity, std::string memo) {
