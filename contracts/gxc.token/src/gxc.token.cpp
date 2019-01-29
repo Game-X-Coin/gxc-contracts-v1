@@ -1,90 +1,57 @@
 /**
- *  @file
- *  @copyright defined in gxc/LICENSE
+ * @file
+ * @copyright defined in gxc/LICENSE
  */
 
 #include <gxc.token/gxc.token.hpp>
 
-namespace gxc { namespace token {
+#include "token.cpp"
+#include "account.cpp"
 
-void contract::create(name issuer, asset maximum_supply, binary_extension<name> type) {
-   eosio_assert(has_admin_auth("create"_n) || has_auth(_self), "missing required authority");
+namespace gxc {
 
-   tokentable tt(_self, issuer.value);
-   auto dup = tt.find(maximum_supply.symbol.code().raw());
-   eosio_assert(dup == tt.end(), "registered token");
+   constexpr name system_account {"gxc"_n};
+   constexpr name null_account   {"gxc.null"_n};
 
-   auto ttype = type.value_or(static_cast<name>(system_token));
-
-   tt.emplace(_self, [&](auto& t) {
-      t.type = ttype;
-      t.sym = maximum_supply.symbol;
-   });
-
-   action( {{_self, system::active_permission}},
-      ttype, "create"_n, std::make_tuple(issuer, maximum_supply)
-   ).send();
-}
-
-void contract::issue(name to, asset quantity, string memo, binary_extension<name> issuer) {
-   auto _issuer = issuer.value_or(static_cast<name>(system::account));
-   eosio_assert(has_admin_auth("issue"_n) || has_auth(_issuer), "missing required authority");
-
-   auto ttype = get_token_type(quantity.symbol.code(), _issuer);
-   eosio_assert(ttype != name(), "not registered token");
-
-   action( {{_self, system::active_permission}, {_issuer, system::active_permission}},
-      ttype, "issue"_n, std::make_tuple(to, quantity, memo, _issuer)
-   ).send();
-}
-
-void contract::retire(asset quantity, string memo, binary_extension<name> issuer) {
-   auto _issuer = issuer.value_or(static_cast<name>(system::account));
-   eosio_assert(has_admin_auth("retire"_n) || has_auth(_issuer), "missing required authority");
-
-   auto ttype = get_token_type(quantity.symbol.code(), _issuer);
-   eosio_assert(ttype != name(), "not registered token");
-
-   action( {{_self, system::active_permission}, {_issuer, system::active_permission}},
-      ttype, "retire"_n, std::make_tuple(quantity, memo, _issuer)
-   ).send();
-}
-
-void contract::transfer(name from, name to, asset quantity, string memo, binary_extension<name> issuer) {
-   auto _issuer = issuer.value_or(static_cast<name>(system::account));
-
-   auto auth = from;
-   if (!has_admin_auth("transfer"_n) && !has_auth(auth)) {
-      auth = to;
-      eosio_assert(has_auth(auth), "missing required authority");
+   void token_contract::regtoken(name issuer, symbol symbol, name contract) {
+      require_auth(_self);
+      check(false, "external tokens are not supported yet");
    }
 
-   auto ttype = get_token_type(quantity.symbol.code(), _issuer);
-   eosio_assert(ttype != name(), "not registered token");
+   void token_contract::create(extended_asset max_supply, std::vector<key_value> opts) {
+      token(_self,
+            max_supply.contract,
+            max_supply.quantity.symbol.code().raw()).create(max_supply, opts);
+   }
 
-   action( {{_self, system::active_permission}, {auth, system::active_permission}},
-      ttype, "transfer"_n, std::make_tuple(from, to, quantity, memo, _issuer)
-   ).send();
-}
+   void token_contract::setopts(name issuer, symbol symbol, std::vector<key_value> opts) {
+      token(_self, issuer, symbol.code().raw()).setopts(opts);
+   }
 
-void contract::setadmin(name account_name, name action_name, bool is_admin) {
-   require_auth(_self);
-   eosio_assert(is_account(account_name), "account not found");
+   void token_contract::setacntopts(name account, name issuer, symbol symbol, std::vector<key_value> opts) {
+   }
 
-   admintable at(_self, action_name.value);
-   auto itr = at.find(account_name.value);
+   void token_contract::transfer(name from, name to, extended_asset quantity, std::string memo) {
+      check(memo.size() <= 256, "memo has more than 256 bytes");
+      check(from != to, "cannot transfer to self");
+      check(is_account(to), "`to` account does not exist");
 
-   if (is_admin) {
-      eosio_assert(itr == at.end(), "already registered administrator");
-      at.emplace(_self, [&](auto& a) {
-         a.account_name = account_name;
-      });
-   } else {
-      eosio_assert(itr != at.end(), "not registered administrator");
-      at.erase(itr);
+      auto _token = token(_self, quantity.contract, quantity.quantity.symbol.code().raw());
+
+      if (from == null_account)
+         _token.issue(to, quantity);
+      else if (to == null_account)
+         _token.retire(from, quantity);
+      else
+         _token.transfer(from, to, quantity);
+   }
+
+   void token_contract::burn(extended_asset quantity, std::string memo) {
+      check(memo.size() <= 256, "memo has more than 256 bytes");
+
+      auto _token = token(_self, quantity.contract, quantity.quantity.symbol.code().raw());
+      _token.burn(quantity);
    }
 }
 
-} }
-
-EOSIO_DISPATCH(gxc::token::contract, (create)(issue)(transfer)(retire)(setadmin))
+EOSIO_DISPATCH(gxc::token_contract, (create)(transfer)(burn)(setopts)(setacntopts))

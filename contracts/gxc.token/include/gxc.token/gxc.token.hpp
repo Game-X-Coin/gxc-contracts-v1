@@ -1,65 +1,128 @@
 /**
- *  @file
- *  @copyright defined in gxc/LICENSE
+ * @file
+ * @copyright defined in gxc/LICENSE
  */
 #pragma once
 
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
 
-#include <gxclib/token.hpp>
-#include <gxclib/game.hpp>
+#include <gxclib/symbol.hpp>
+#include <gxclib/key_value.hpp>
+#include <gxclib/multi_index.hpp>
 
 using namespace eosio;
-using std::string;
 
-namespace gxc { namespace token {
+namespace gxc {
 
-class [[eosio::contract("gxc.token")]] contract : public eosio::contract {
-public:
-   using eosio::contract::contract;
+   class [[eosio::contract("gxc.token")]] token_contract : public contract {
+   public:
+      using contract::contract;
 
-   [[eosio::action]] void create (name issuer, asset maximum_supply, binary_extension<name> type);
-   [[eosio::action]] void issue (name to, asset quantity, string memo, binary_extension<name> issuer);
-   [[eosio::action]] void retire (asset quantity, string memo, binary_extension<name> issuer);
-   [[eosio::action]] void transfer (name from, name to, asset quantity, string memo, binary_extension<name> issuer);
-   [[eosio::action]] void setadmin (name account_name, name action_name, bool is_admin);
+      void regtoken(name issuer, symbol symbol, name contract);
 
-private:
-   struct [[eosio::table("token"), eosio::contract("gxc.token")]] tokenrow {
-      name     type;
-      symbol   sym;
+      [[eosio::action]]
+      void create(extended_asset max_supply, std::vector<key_value> opts);
 
-      uint64_t  primary_key()const { return sym.code().raw(); }
+      [[eosio::action]]
+      void transfer(name from, name to, extended_asset quantity, std::string memo);
 
-      EOSLIB_SERIALIZE(tokenrow, (type)(sym))
-   };
+      [[eosio::action]]
+      void burn(extended_asset quantity, std::string memo);
 
-   struct [[eosio::table("admin"), eosio::contract("gxc.token")]] adminrow {
-      name account_name;
+      [[eosio::action]]
+      void setopts(name issuer, symbol symbol, std::vector<key_value> opts);
 
-      uint64_t primary_key()const { return account_name.value; }
+      [[eosio::action]]
+      void setacntopts(name account, name issuer, symbol symbol, std::vector<key_value> opts);
 
-      EOSLIB_SERIALIZE(adminrow, (account_name))
-   };
+      struct [[eosio::table("accounts"), eosio::contract("gxc.token")]] account_balance {
+         asset    balance;
+         asset    deposit;
+         name     issuer;
+         bool     frozen    = false;
+         bool     whitelist = true;
+         uint64_t id;
 
-   typedef multi_index<"token"_n, tokenrow> tokentable;
-   typedef multi_index<"admin"_n, adminrow> admintable;
+         uint64_t  primary_key()const { return id; }
+         uint128_t by_symbol_code()const {
+            return extended_symbol_code(balance.symbol, issuer).raw();
+         }
 
-   inline name get_token_type(symbol_code sym_code, name issuer) {
-      name type;
-      db_get_i64(db_find_i64(_self.value, issuer.value, "token"_n.value, sym_code.raw()), &type, sizeof(type));
-      return type;
-   }
+         EOSLIB_SERIALIZE( account_balance, (balance)(deposit)(issuer)(frozen)(whitelist)(id) )
+      };
 
-   inline bool has_admin_auth(name action_name) {
-      admintable at(_self, action_name.value);
-      for (auto itr = at.lower_bound(name().value); itr != at.end(); itr++) {
-         if (has_auth((*itr).account_name)) return true;
+      struct [[eosio::table("stat"), eosio::contract("gxc.token")]] currency_stats {
+         asset supply;
+         asset max_supply;
+         name  issuer;
+         bool  can_freeze        = true;
+         bool  can_recall        = true;
+         bool  can_whitelist     = false;
+         bool  is_frozen         = false;
+         bool  enforce_whitelist = false;
+
+         uint64_t primary_key()const { return supply.symbol.code().raw(); }
+
+         EOSLIB_SERIALIZE( currency_stats, (supply)(max_supply)(issuer)(can_freeze)(can_recall)(can_whitelist)
+                                           (is_frozen)(enforce_whitelist) )
+      };
+
+      typedef multi_index<"stat"_n, currency_stats> stat;
+      typedef multi_index<"accounts"_n, account_balance,
+                 indexed_by<"symcode"_n, const_mem_fun<account_balance, uint128_t, &account_balance::by_symbol_code>>
+              > accounts;
+
+   private:
+      static void check_asset_is_valid(asset quantity) {
+         check(quantity.symbol.is_valid(), "invalid symbol name");
+         check(quantity.is_valid(), "invalid quantity");
+         check(quantity.amount > 0, "must be positive quantity");
       }
-      return false;
-   }
-};
 
-} }
+      static void check_asset_is_valid(extended_asset value) {
+         check_asset_is_valid(value.quantity);
+      }
 
+      class token;
+      class account;
+
+      class token : public multi_index_item<stat> {
+      public:
+         using multi_index_item::multi_index_item;
+
+         void create(extended_asset max_supply, const std::vector<key_value>& opts);
+         void setopts(const std::vector<key_value>& opts);
+         void issue(name to, extended_asset quantity);
+         void burn(extended_asset quantity);
+         void retire(name owner, extended_asset quantity);
+         void transfer(name from, name to, extended_asset quantity);
+
+         account get_account(name owner) {
+            check(exists(), "token not found");
+            auto _account = account(get_self(), owner,
+                                    extended_symbol_code(_this->supply.symbol,
+                                                         _this->issuer).raw(), this);
+            return _account;
+         }
+      };
+
+      class account : public multi_index_item<accounts, "symcode"_n, uint128_t> {
+      public:
+         account(name receiver, name code, uint128_t key, const token* st)
+         : multi_index_item(receiver, code, key)
+         , _st(st)
+         {}
+
+         void setopts(const std::vector<key_value>& opts);
+         void sub_balance(extended_asset value);
+         void add_balance(extended_asset value);
+         void sub_deposit(extended_asset value);
+         void add_deposit(extended_asset value);
+
+      private:
+         const token* _st;
+      };
+   };
+
+}

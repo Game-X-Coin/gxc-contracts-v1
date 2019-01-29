@@ -9,10 +9,11 @@
 
 #include <gxclib/system.hpp>
 #include <gxclib/game.hpp>
-#include <gxc.token/gxc.token.hpp>
+#include <gxclib/token.hpp>
 
 using namespace eosio;
 using gxc::token::get_float_amount;
+using std::string;
 
 namespace gxc {
 
