@@ -8,7 +8,7 @@
 namespace gxc {
 
    void token_contract::token::create(extended_asset max_supply, const std::vector<key_value>& opts) {
-      require_auth(get_self());
+      require_auth(self());
 
       check(!exists(), "token with symbol already exists");
       check_asset_is_valid(max_supply);
@@ -16,10 +16,11 @@ namespace gxc {
       //TODO: check core symbol
       //TODO: check game account
 
-      _tbl.emplace(get_self(), [&](auto& t) {
+      _tbl.emplace(self(), [&](auto& t) {
          t.supply.symbol = max_supply.quantity.symbol;
          t.max_supply    = max_supply.quantity;
          t.issuer        = max_supply.contract;
+         t.withdraw_min_amount.symbol = max_supply.quantity.symbol;
 
          for (auto o : opts) {
             if (o.key == "can_freeze") {
@@ -32,6 +33,12 @@ namespace gxc {
                t.is_frozen = static_cast<bool>(o.value[0]);
             } else if (o.key == "enforce_whitelist") {
                t.enforce_whitelist = static_cast<bool>(o.value[0]);
+            } else if (o.key == "withdraw_min_amount") {
+               check(o.value.size() == sizeof(asset), "invalid serialization");
+               t.withdraw_min_amount = *reinterpret_cast<asset*>(o.value.data());
+            } else if (o.key == "withdraw_delay_sec") {
+               check(o.value.size() == sizeof(uint32_t), "invalid serialization");
+               t.withdraw_delay_sec = *reinterpret_cast<uint32_t*>(o.value.data());
             } else {
                check(false, "unknown option `" + o.key + "`");
             }

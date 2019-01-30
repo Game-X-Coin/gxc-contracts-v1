@@ -7,6 +7,7 @@
 
 #include "token.cpp"
 #include "account.cpp"
+#include "requests.cpp"
 
 namespace gxc {
 
@@ -67,6 +68,14 @@ namespace gxc {
    void token_contract::close(name owner, name issuer, symbol symbol) {
       token(_self, issuer, symbol.code().raw()).get_account(owner).close();
    }
+
+   void token_contract::deposit(name owner, extended_asset quantity) {
+      token(_self, quantity.contract, quantity.quantity.symbol.code().raw()).get_account(owner).deposit(quantity);
+   }
+
+   void token_contract::withdraw(name owner, extended_asset quantity) {
+      token(_self, quantity.contract, quantity.quantity.symbol.code().raw()).get_account(owner).withdraw(quantity);
+   }
 }
 
-EOSIO_DISPATCH(gxc::token_contract, (create)(transfer)(burn)(setopts)(setacntopts)(open)(close))
+EOSIO_DISPATCH(gxc::token_contract, (create)(transfer)(burn)(setopts)(setacntopts)(open)(close)(deposit)(withdraw))
