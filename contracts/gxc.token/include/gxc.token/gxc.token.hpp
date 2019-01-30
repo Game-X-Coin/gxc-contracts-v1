@@ -41,7 +41,7 @@ namespace gxc {
          asset    deposit;
          name     issuer;
          bool     frozen    = false;
-         bool     whitelist = true;
+         bool     whitelist = false;
          uint64_t id;
 
          uint64_t  primary_key()const { return id; }
@@ -113,6 +113,11 @@ namespace gxc {
          : multi_index_item(receiver, code, key)
          , _st(st)
          {}
+
+         void check_account_is_valid() {
+            check(!_this->frozen, "account is frozen");
+            check(!(*_st)->enforce_whitelist || _this->whitelist, "account is not whitelisted");
+         }
 
          void setopts(const std::vector<key_value>& opts);
          void sub_balance(extended_asset value);

@@ -44,16 +44,20 @@ namespace gxc {
 
    void token_contract::token::setopts(const std::vector<key_value>& opts) {
       check(opts.size(), "no changes on options");
-      require_auth(name(_tbl.get_scope()));
+      require_auth(get_scope());
 
       _tbl.modify(_this, same_payer, [&](auto& s) {
          for (auto o : opts) {
             if (o.key == "is_frozen") {
                check(_this->can_freeze, "not allowed to freeze token");
-               s.is_frozen = static_cast<bool>(o.value[0]);
+               auto value = static_cast<bool>(o.value[0]);
+               check(s.is_frozen != value, "option already has given value");
+               s.is_frozen = value;
             } else if (o.key == "enforce_whitelist") {
                check(_this->can_whitelist, "not allowed to apply whitelist");
-               s.enforce_whitelist = static_cast<bool>(o.value[0]);
+               auto value = static_cast<bool>(o.value[0]);
+               check(s.enforce_whitelist != value, "option already has given value");
+               s.enforce_whitelist = value;
             } else {
                check(false, "unknown option `" + o.key + "`");
             }
@@ -64,6 +68,7 @@ namespace gxc {
    void token_contract::token::issue(name to, extended_asset quantity) {
       require_auth(quantity.contract);
       check_asset_is_valid(quantity);
+      check(!_this->is_frozen, "token is frozen");
 
       //TODO: check game account
       check(quantity.quantity.symbol == _this->supply.symbol, "symbol precision mismatch");
@@ -85,6 +90,7 @@ namespace gxc {
    void token_contract::token::retire(name owner, extended_asset quantity) {
       require_auth(owner);
       check_asset_is_valid(quantity);
+      check(!_this->is_frozen, "token is frozen");
 
       //TODO: check game account
       check(quantity.quantity.symbol == _this->supply.symbol, "symbol precision mismatch");
@@ -104,6 +110,7 @@ namespace gxc {
    void token_contract::token::burn(extended_asset quantity) {
       require_auth(quantity.contract);
       check_asset_is_valid(quantity);
+      check(!_this->is_frozen, "token is frozen");
 
       //TODO: check game account
       check(quantity.quantity.symbol == _this->supply.symbol, "symbol precision mismatch");
@@ -121,6 +128,7 @@ namespace gxc {
       check(is_account(to), "`to` account does not exist");
 
       check_asset_is_valid(quantity);
+      check(!_this->is_frozen, "token is frozen");
 
       bool is_recall = false;
 
