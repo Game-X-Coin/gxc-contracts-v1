@@ -9,7 +9,7 @@ namespace gxc {
 
    void token_contract::account::setopts(const std::vector<key_value>& opts) {
       check(opts.size(), "no changes on options");
-      require_auth(_st->get_scope());
+      require_auth(issuer());
 
       _tbl.modify(_this, same_payer, [&](auto& a) {
          for (auto o : opts) {
@@ -90,5 +90,23 @@ namespace gxc {
             a.deposit += value.quantity;
          });
       }
+   }
+
+   void token_contract::account::open() {
+      require_auth(issuer());
+      check(!exists(), "account balance already exists");
+      _tbl.emplace(get_self(), [&](auto& a) {
+         a.id = _tbl.available_primary_key();
+         a.balance.symbol = (*_st)->supply.symbol;
+         a.deposit.symbol = (*_st)->supply.symbol;
+         a.issuer = (*_st)->issuer;
+      });
+   }
+
+   void token_contract::account::close() {
+      require_auth(owner());
+      check(exists(), "account balance doesn't exist");
+      check(!_this->balance.amount && !_this->deposit.amount, "cannot close non-zero balance");
+      _tbl.erase(_this);
    }
 }

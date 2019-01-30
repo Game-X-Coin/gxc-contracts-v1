@@ -53,6 +53,20 @@ namespace gxc {
       auto _token = token(_self, quantity.contract, quantity.quantity.symbol.code().raw());
       _token.burn(quantity);
    }
+
+
+   void token_contract::open(name owner, name issuer, symbol symbol, std::vector<key_value> opts) {
+      auto _token = token(_self, issuer, symbol.code().raw());
+      _token.check_symbol_is_valid(symbol);
+
+      auto _account = _token.get_account(owner);
+      _account.open();
+      _account.setopts(opts);
+   }
+
+   void token_contract::close(name owner, name issuer, symbol symbol) {
+      token(_self, issuer, symbol.code().raw()).get_account(owner).close();
+   }
 }
 
-EOSIO_DISPATCH(gxc::token_contract, (create)(transfer)(burn)(setopts)(setacntopts))
+EOSIO_DISPATCH(gxc::token_contract, (create)(transfer)(burn)(setopts)(setacntopts)(open)(close))

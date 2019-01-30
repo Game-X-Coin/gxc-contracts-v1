@@ -44,7 +44,7 @@ namespace gxc {
 
    void token_contract::token::setopts(const std::vector<key_value>& opts) {
       check(opts.size(), "no changes on options");
-      require_auth(get_scope());
+      require_auth(issuer());
 
       _tbl.modify(_this, same_payer, [&](auto& s) {
          for (auto o : opts) {

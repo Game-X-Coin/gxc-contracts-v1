@@ -36,6 +36,12 @@ namespace gxc {
       [[eosio::action]]
       void setacntopts(name account, name issuer, symbol symbol, std::vector<key_value> opts);
 
+      [[eosio::action]]
+      void open(name owner, name issuer, symbol symbol, std::vector<key_value> opts);
+
+      [[eosio::action]]
+      void close(name owner, name issuer, symbol symbol);
+
       struct [[eosio::table("accounts"), eosio::contract("gxc.token")]] account_balance {
          asset    balance;
          asset    deposit;
@@ -98,6 +104,10 @@ namespace gxc {
          void retire(name owner, extended_asset quantity);
          void transfer(name from, name to, extended_asset quantity);
 
+         void check_symbol_is_valid(symbol symbol) {
+            check(_this->supply.symbol == symbol, "symbol precision mismatch" );
+         }
+
          account get_account(name owner) {
             check(exists(), "token not found");
             auto _account = account(get_self(), owner,
@@ -105,6 +115,8 @@ namespace gxc {
                                                          _this->issuer).raw(), this);
             return _account;
          }
+
+         inline name issuer() { return get_scope(); }
       };
 
       class account : public multi_index_item<accounts, "symcode"_n, uint128_t> {
@@ -124,6 +136,11 @@ namespace gxc {
          void add_balance(extended_asset value);
          void sub_deposit(extended_asset value);
          void add_deposit(extended_asset value);
+         void open();
+         void close();
+
+         inline name owner()  { return get_scope(); }
+         inline name issuer() { return _st->get_scope(); }
 
       private:
          const token* _st;
