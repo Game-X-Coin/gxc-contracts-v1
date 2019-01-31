@@ -134,7 +134,7 @@ namespace gxc {
             check(_this->supply.symbol == symbol, "symbol precision mismatch" );
          }
 
-         account get_account(name owner) {
+         account get_account(name owner)const {
             check(exists(), "token not found");
             auto _account = account(code(), owner,
                                     extended_symbol_code(_this->supply.symbol,
@@ -169,7 +169,7 @@ namespace gxc {
          inline name owner()const  { return scope(); }
          inline name issuer()const { return _st->scope(); }
 
-         const token& get_token()const { return *_st; }
+         inline const token& get_token()const { return *_st; }
 
       private:
          const token* _st;

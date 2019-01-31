@@ -26,9 +26,9 @@ namespace eosio {
       }
 
       const T& table()const { return _tbl; }
-      auto index() { return _tbl.template get_index<IndexName>(); }
+      auto index()const { return _tbl.template get_index<IndexName>(); }
 
-      bool exists() { return _this != _tbl.end(); }
+      bool exists()const { return _this != _tbl.end(); }
 
       inline name code()const  { return _tbl.get_code(); }
       inline name scope()const { return name(_tbl.get_scope()); }
@@ -79,7 +79,7 @@ namespace eosio {
 
       const T& table()const { return _tbl; }
 
-      bool exists() { return _this != _tbl.end(); }
+      bool exists()const { return _this != _tbl.end(); }
 
       inline name code()const  { return _tbl.get_code(); }
       inline name scope()const { return name(_tbl.get_scope()); }

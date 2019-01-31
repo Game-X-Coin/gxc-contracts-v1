@@ -112,8 +112,7 @@ namespace gxc {
    void token_contract::account::deposit(extended_asset value) {
       check_asset_is_valid(value);
 
-      auto _token = token(code(), value.contract, value.quantity.symbol.code().raw());
-      check(_token->can_recall, "not supported token");
+      check(get_token()->can_recall, "not supported token");
 
       auto _req = requests(code(), owner(),
                            extended_symbol_code(value.quantity.symbol, value.contract).raw());
@@ -128,26 +127,25 @@ namespace gxc {
             _req.modify(same_payer, [&](auto& rq) {
                rq.quantity -= value.quantity;
             });
-            _token.get_account(code()).sub_balance(value);
+            get_token().get_account(code()).sub_balance(value);
          } else {
-            _token.get_account(code()).sub_balance(extended_asset(_req->quantity, _req->issuer));
+            get_token().get_account(code()).sub_balance(extended_asset(_req->quantity, _req->issuer));
             if (leftover.amount)
-               _token.get_account(owner()).sub_balance(extended_asset(-leftover, value.contract));
+               sub_balance(extended_asset(-leftover, value.contract));
             _req.erase();
             _req.refresh_schedule();
          }
       }
 
-      _token.get_account(owner()).add_deposit(value);
+      add_deposit(value);
    }
 
    void token_contract::account::withdraw(extended_asset value) {
       check_asset_is_valid(value);
       require_auth(owner());
 
-      auto _token = token(code(), value.contract, value.quantity.symbol.code().raw());
-      check(_token->can_recall, "not supported token");
-      check(value.quantity >= _token->withdraw_min_amount, "withdraw amount is too small");
+      check(get_token()->can_recall, "not supported token");
+      check(value.quantity >= get_token()->withdraw_min_amount, "withdraw amount is too small");
 
       auto _req = requests(code(), owner(),
                            extended_symbol_code(value.quantity.symbol, value.contract).raw());
@@ -167,8 +165,8 @@ namespace gxc {
          });
       }
 
-      _token.get_account(owner()).sub_deposit(value);
-      _token.get_account(code()).add_balance(value);
+      sub_deposit(value);
+      get_token().get_account(code()).add_balance(value);
 
       _req.refresh_schedule(ctp);
    }
