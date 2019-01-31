@@ -17,10 +17,13 @@ class [[eosio::contract("gxc.user")]] contract : public eosio::contract {
 public:
    using eosio::contract::contract;
 
+   [[eosio::action]] void connect (name account_name, name game_name, string login_token);
    [[eosio::action]] void login (name account_name, name game_name, string login_token);
    [[eosio::action]] void setnick (name account_name, string nickname);
    [[eosio::action]] void rmvnick (name account_name);
    [[eosio::action]] void payram4nick (name account_name);
+
+   void authenticate(name account_name, name game_name, const string& login_token);
 
    struct [[eosio::table, eosio::contract("gxc.user")]] nickrow {
       name    account_name;

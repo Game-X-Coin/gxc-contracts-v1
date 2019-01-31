@@ -6,13 +6,20 @@
 
 namespace gxc { namespace user {
 
-void contract::login(name account_name, name game_name, string login_token) {
-   eosio_assert(login_token.size() == 16, "login_token has invalid length");
+void contract::authenticate(name account_name, name game_name, const string& login_token) {
+   check(login_token.size() == 16, "login_token has invalid length");
    require_auth(account_name);
 
-   char* end;
-   auto expire_time = strtoul(login_token.substr(8).data(), &end, 16);
-   eosio_assert(now() <= expire_time, "login_token is expired");
+   auto expire_time = strtoul(login_token.substr(8).data(), nullptr, 16);
+   check(now() <= expire_time, "login_token is expired");
+}
+
+void contract::login(name account_name, name game_name, string login_token) {
+   authenticate(account_name, game_name, login_token);
+}
+
+void contract::connect(name account_name, name game_name, string login_token) {
+   authenticate(account_name, game_name, login_token);
 }
 
 void contract::setnick(name account_name, string nickname) {
