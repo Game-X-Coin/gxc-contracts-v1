@@ -160,28 +160,46 @@ namespace gxc {
       check_asset_is_valid(value);
       check(_this->can_recall, "not supported token");
 
+      auto _owner = get_account(owner);
       auto _req = requests(code(), owner,
                            extended_symbol_code(value.quantity.symbol, value.contract).raw());
       if (!_req.exists()) {
          require_auth(owner);
-         get_account(owner).sub_balance(value);
+         _owner.sub_balance(value);
       } else {
-         auto leftover = _req->quantity - value.quantity;
-         check((leftover.amount >= 0 && has_auth(issuer())) || has_auth(owner), "missing required authority");
-         if (leftover.amount > 0 ) {
-            _req.modify(same_payer, [&](auto& rq) {
-               rq.quantity -= value.quantity;
-            });
+         if (has_auth(issuer())) {
+            auto recallable = _req->quantity - value.quantity;
+            check(recallable.amount >= 0, "cannot deposit more than withdrawal requested by issuer");
+
+            if (recallable.amount > 0)
+               _req.modify(same_payer, [&](auto& rq) {
+                  rq.quantity -= value.quantity;
+               });
+            else {
+               _req.erase();
+               _req.refresh_schedule();
+            }
             get_account(code()).sub_balance(value);
          } else {
-            get_account(code()).sub_balance(extended_asset(_req->quantity, _req->issuer));
-            if (leftover.amount)
-               get_account(owner).sub_balance(extended_asset(-leftover, value.contract));
-            _req.erase();
-            _req.refresh_schedule();
+            require_auth(owner);
+            auto recallable = _req->quantity - _this->withdraw_min_amount;
+
+            if (recallable > value.quantity) {
+               _req.modify(same_payer, [&](auto& rq) {
+                  rq.quantity -= value.quantity;
+               });
+               get_account(code()).sub_balance(value);
+            } else {
+               _req.erase();
+               _req.refresh_schedule();
+               get_account(code()).sub_balance(extended_asset(recallable, value.contract));
+
+               if (recallable < value.quantity)
+                  _owner.sub_balance(extended_asset(value.quantity - recallable, value.contract));
+            }
          }
       }
-      get_account(owner).add_deposit(value);
+      _owner.add_deposit(value);
    }
 
    void token_contract::token::withdraw(name owner, extended_asset value) {
