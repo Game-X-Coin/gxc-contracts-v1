@@ -15,9 +15,9 @@ namespace gxc {
 
       if (_it != _idx.end()) {
          transaction out;
-         out.actions.emplace_back(action{{self(), active_permission}, self(), "clearreqs"_n, owner()});
+         out.actions.emplace_back(action{{code(), active_permission}, code(), "clearreqs"_n, owner()});
 
-         auto withdraw_delay_sec = token(self(), _it->issuer,
+         auto withdraw_delay_sec = token(code(), _it->issuer,
                                          _it->quantity.symbol.code().raw())->withdraw_delay_sec;
 
          if (_it->requested_time == base_time) {
@@ -35,7 +35,7 @@ namespace gxc {
    }
 
    void token_contract::requests::clear() {
-      require_auth(self());
+      require_auth(code());
 
       auto _idx = _tbl.get_index<"reqtime"_n>();
       auto _it = _idx.begin();
@@ -43,10 +43,10 @@ namespace gxc {
       check(_it != _idx.end(), "withdrawal requests not found");
 
       for ( ; _it != _idx.end(); _it = _idx.begin()) {
-         auto _token = token(self(), _it->issuer, _it->quantity.symbol.code().raw());
+         auto _token = token(code(), _it->issuer, _it->quantity.symbol.code().raw());
          if (_it->requested_time + seconds(_token->withdraw_delay_sec) > current_time_point()) break;
 
-         _token.get_account(self()).sub_balance(extended_asset(_it->quantity, _it->issuer));
+         _token.get_account(code()).sub_balance(extended_asset(_it->quantity, _it->issuer));
          _token.get_account(owner()).sub_balance(extended_asset(_it->quantity, _it->issuer));
 
          _idx.erase(_it);

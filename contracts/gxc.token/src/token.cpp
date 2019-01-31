@@ -8,7 +8,7 @@
 namespace gxc {
 
    void token_contract::token::create(extended_asset max_supply, const std::vector<key_value>& opts) {
-      require_auth(self());
+      require_auth(code());
 
       check(!exists(), "token with symbol already exists");
       check_asset_is_valid(max_supply);
@@ -16,7 +16,7 @@ namespace gxc {
       //TODO: check core symbol
       //TODO: check game account
 
-      _tbl.emplace(self(), [&](auto& t) {
+      _tbl.emplace(code(), [&](auto& t) {
          t.supply.symbol = max_supply.quantity.symbol;
          t.max_supply    = max_supply.quantity;
          t.issuer        = max_supply.contract;

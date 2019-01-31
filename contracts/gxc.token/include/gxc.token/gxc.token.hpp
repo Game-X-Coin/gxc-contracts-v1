@@ -136,7 +136,7 @@ namespace gxc {
 
          account get_account(name owner) {
             check(exists(), "token not found");
-            auto _account = account(self(), owner,
+            auto _account = account(code(), owner,
                                     extended_symbol_code(_this->supply.symbol,
                                                          _this->issuer).raw(), this);
             return _account;
@@ -153,7 +153,7 @@ namespace gxc {
          {}
 
          void check_account_is_valid() {
-            if (self() != owner()) {
+            if (code() != owner()) {
                check(!_this->frozen, "account is frozen");
                check(!(*_st)->enforce_whitelist || _this->whitelist, "account is not whitelisted");
             }

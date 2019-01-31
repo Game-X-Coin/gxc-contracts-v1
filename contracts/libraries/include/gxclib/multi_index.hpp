@@ -30,7 +30,7 @@ namespace eosio {
 
       bool exists() { return _this != _tbl.end(); }
 
-      inline name self()const  { return _tbl.get_code(); }
+      inline name code()const  { return _tbl.get_code(); }
       inline name scope()const { return name(_tbl.get_scope()); }
 
       const typename T::const_iterator operator->()const { return _this; }
@@ -81,7 +81,7 @@ namespace eosio {
 
       bool exists() { return _this != _tbl.end(); }
 
-      inline name self()const  { return _tbl.get_code(); }
+      inline name code()const  { return _tbl.get_code(); }
       inline name scope()const { return name(_tbl.get_scope()); }
 
       const typename T::const_iterator operator->()const { return _this; }
