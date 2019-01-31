@@ -70,11 +70,11 @@ namespace gxc {
    }
 
    void token_contract::deposit(name owner, extended_asset quantity) {
-      token(_self, quantity.contract, quantity.quantity.symbol.code().raw()).get_account(owner).deposit(quantity);
+      token(_self, quantity.contract, quantity.quantity.symbol.code().raw()).deposit(owner, quantity);
    }
 
    void token_contract::withdraw(name owner, extended_asset quantity) {
-      token(_self, quantity.contract, quantity.quantity.symbol.code().raw()).get_account(owner).withdraw(quantity);
+      token(_self, quantity.contract, quantity.quantity.symbol.code().raw()).withdraw(owner, quantity);
    }
 }
 

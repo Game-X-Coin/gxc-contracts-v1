@@ -129,6 +129,8 @@ namespace gxc {
          void burn(extended_asset quantity);
          void retire(name owner, extended_asset quantity);
          void transfer(name from, name to, extended_asset quantity);
+         void deposit(name owner, extended_asset value);
+         void withdraw(name owner, extended_asset value);
 
          void check_symbol_is_valid(symbol symbol) {
             check(_this->supply.symbol == symbol, "symbol precision mismatch" );
@@ -162,9 +164,6 @@ namespace gxc {
          void setopts(const std::vector<key_value>& opts);
          void open();
          void close();
-
-         void deposit(extended_asset value);
-         void withdraw(extended_asset value);
 
          inline name owner()const  { return scope(); }
          inline name issuer()const { return _st->scope(); }

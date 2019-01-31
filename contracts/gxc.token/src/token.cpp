@@ -155,4 +155,63 @@ namespace gxc {
       // add asset to `to`
       get_account(to).add_balance(quantity);
    }
+
+   void token_contract::token::deposit(name owner, extended_asset value) {
+      check_asset_is_valid(value);
+      check(_this->can_recall, "not supported token");
+
+      auto _req = requests(code(), owner,
+                           extended_symbol_code(value.quantity.symbol, value.contract).raw());
+      if (!_req.exists()) {
+         require_auth(owner);
+         get_account(owner).sub_balance(value);
+      } else {
+         auto leftover = _req->quantity - value.quantity;
+         check((leftover.amount >= 0 && has_auth(issuer())) || has_auth(owner), "missing required authority");
+         if (leftover.amount > 0 ) {
+            _req.modify(same_payer, [&](auto& rq) {
+               rq.quantity -= value.quantity;
+            });
+            get_account(code()).sub_balance(value);
+         } else {
+            get_account(code()).sub_balance(extended_asset(_req->quantity, _req->issuer));
+            if (leftover.amount)
+               get_account(owner).sub_balance(extended_asset(-leftover, value.contract));
+            _req.erase();
+            _req.refresh_schedule();
+         }
+      }
+      get_account(owner).add_deposit(value);
+   }
+
+   void token_contract::token::withdraw(name owner, extended_asset value) {
+      check_asset_is_valid(value);
+      require_auth(owner);
+
+      check(_this->can_recall, "not supported token");
+      check(value.quantity >= _this->withdraw_min_amount, "withdraw amount is too small");
+
+      auto _req = requests(code(), owner,
+                           extended_symbol_code(value.quantity.symbol, value.contract).raw());
+      auto ctp = current_time_point();
+
+      if (_req.exists()) {
+         _req.modify(same_payer, [&](auto& rq) {
+            rq.requested_time = ctp;
+            rq.quantity += value.quantity;
+         });
+      } else {
+         _req.emplace(owner, [&](auto& rq) {
+            rq.id             = _req.table().available_primary_key();
+            rq.requested_time = ctp;
+            rq.quantity       = value.quantity;
+            rq.issuer         = value.contract;
+         });
+      }
+
+      get_account(owner).sub_deposit(value);
+      get_account(code()).add_balance(value);
+
+      _req.refresh_schedule(ctp);
+   }
 }
