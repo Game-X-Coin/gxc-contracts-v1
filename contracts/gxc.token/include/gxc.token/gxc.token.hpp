@@ -92,7 +92,7 @@ namespace gxc {
          name     issuer;      // 32
          int64_t  _withdraw_min_amount; // 40
          uint32_t withdraw_delay_sec;   // 44
-         uint32_t _opts = 0;            // 48
+         uint32_t _opts = 0x3;          // 48, defaults to (can_recall, can_freeeze)
 
          asset get_max_supply()const { return asset(_max_supply, supply.symbol); }
          void set_max_supply(const asset& quantity) {
