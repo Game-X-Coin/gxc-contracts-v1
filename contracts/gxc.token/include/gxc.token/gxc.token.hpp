@@ -90,9 +90,9 @@ namespace gxc {
          asset    supply;      // 16
          int64_t  _max_supply; // 24
          name     issuer;      // 32
-         int64_t  _withdraw_min_amount; // 40
-         uint32_t withdraw_delay_sec;   // 44
-         uint32_t _opts = 0x3;          // 48, defaults to (can_recall, can_freeeze)
+         uint32_t _opts = 0x3; // 36, defaults to (can_recall, can_freeeze)
+         uint32_t withdraw_delay_sec;   // 40
+         int64_t  _withdraw_min_amount; // 48
 
          asset get_max_supply()const { return asset(_max_supply, supply.symbol); }
          void set_max_supply(const asset& quantity) {
@@ -110,8 +110,8 @@ namespace gxc {
 
          uint64_t primary_key()const { return supply.symbol.code().raw(); }
 
-         EOSLIB_SERIALIZE( currency_stats, (supply)(_max_supply)(issuer)(_withdraw_min_amount)(withdraw_delay_sec)
-                                           (_opts) )
+         EOSLIB_SERIALIZE( currency_stats, (supply)(_max_supply)(issuer)(_opts)
+                                           (withdraw_delay_sec)(_withdraw_min_amount) )
       };
 
       typedef multi_index<"stat"_n, currency_stats> stat;
