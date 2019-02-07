@@ -93,12 +93,13 @@ namespace gxc {
 
    void token_contract::account::open() {
       require_auth(issuer());
-      check(!exists(), "account balance already exists");
-      _tbl.emplace(code(), [&](auto& a) {
-         a.set_primary_key(_tbl.available_primary_key());
-         a.balance.symbol = (*_st)->supply.symbol;
-         a.issuer         = (*_st)->issuer;
-      });
+      if (!exists()) {
+         _tbl.emplace(code(), [&](auto& a) {
+            a.set_primary_key(_tbl.available_primary_key());
+            a.balance.symbol = (*_st)->supply.symbol;
+            a.issuer         = (*_st)->issuer;
+         });
+      }
    }
 
    void token_contract::account::close() {
