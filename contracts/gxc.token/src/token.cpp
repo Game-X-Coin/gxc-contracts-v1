@@ -18,24 +18,23 @@ namespace gxc {
 
       _tbl.emplace(code(), [&](auto& t) {
          t.supply.symbol = max_supply.quantity.symbol;
-         t.max_supply    = max_supply.quantity;
+         t.set_max_supply(max_supply.quantity);
          t.issuer        = max_supply.contract;
-         t.withdraw_min_amount.symbol = max_supply.quantity.symbol;
 
          for (auto o : opts) {
-            if (o.key == "can_freeze") {
-               t.can_freeze = static_cast<bool>(o.value[0]);
-            } else if (o.key == "can_recall") {
-               t.can_recall = static_cast<bool>(o.value[0]);
+            if (o.key == "can_recall") {
+               t.set_opt(opt::can_recall, static_cast<bool>(o.value[0]));
+            } else if (o.key == "can_freeze") {
+               t.set_opt(opt::can_freeze, static_cast<bool>(o.value[0]));
             } else if (o.key == "can_whitelist") {
-               t.can_whitelist = static_cast<bool>(o.value[0]);
+               t.set_opt(opt::can_whitelist, static_cast<bool>(o.value[0]));
             } else if (o.key == "is_frozen") {
-               t.is_frozen = static_cast<bool>(o.value[0]);
+               t.set_opt(opt::is_frozen, static_cast<bool>(o.value[0]));
             } else if (o.key == "enforce_whitelist") {
-               t.enforce_whitelist = static_cast<bool>(o.value[0]);
+               t.set_opt(opt::enforce_whitelist, static_cast<bool>(o.value[0]));
             } else if (o.key == "withdraw_min_amount") {
                check(o.value.size() == sizeof(asset), "invalid serialization");
-               t.withdraw_min_amount = *reinterpret_cast<asset*>(o.value.data());
+               t.set_withdraw_min_amount(*reinterpret_cast<asset*>(o.value.data()));
             } else if (o.key == "withdraw_delay_sec") {
                check(o.value.size() == sizeof(uint32_t), "invalid serialization");
                t.withdraw_delay_sec = *reinterpret_cast<uint32_t*>(o.value.data());
@@ -44,8 +43,8 @@ namespace gxc {
             }
          }
 
-         check(!t.is_frozen || t.can_freeze, "not allowed to set frozen ");
-         check(!t.enforce_whitelist || t.can_whitelist, "not allowed to set whitelist");
+         check(!t.get_opt(opt::is_frozen) || t.get_opt(opt::can_freeze), "not allowed to set frozen ");
+         check(!t.get_opt(opt::enforce_whitelist) || t.get_opt(opt::can_whitelist), "not allowed to set whitelist");
       });
    }
 
@@ -56,15 +55,15 @@ namespace gxc {
       _tbl.modify(_this, same_payer, [&](auto& s) {
          for (auto o : opts) {
             if (o.key == "is_frozen") {
-               check(_this->can_freeze, "not allowed to freeze token");
+               check(s.get_opt(opt::can_freeze), "not allowed to freeze token");
                auto value = static_cast<bool>(o.value[0]);
-               check(s.is_frozen != value, "option already has given value");
-               s.is_frozen = value;
+               check(s.get_opt(opt::is_frozen) != value, "option already has given value");
+               s.set_opt(opt::is_frozen, value);
             } else if (o.key == "enforce_whitelist") {
-               check(_this->can_whitelist, "not allowed to apply whitelist");
+               check(s.get_opt(opt::can_whitelist), "not allowed to apply whitelist");
                auto value = static_cast<bool>(o.value[0]);
-               check(s.enforce_whitelist != value, "option already has given value");
-               s.enforce_whitelist = value;
+               check(s.get_opt(opt::enforce_whitelist) != value, "option already has given value");
+               s.set_opt(opt::enforce_whitelist, value);
             } else {
                check(false, "unknown option `" + o.key + "`");
             }
@@ -72,75 +71,75 @@ namespace gxc {
       });
    }
 
-   void token_contract::token::issue(name to, extended_asset quantity) {
-      require_auth(quantity.contract);
-      check_asset_is_valid(quantity);
-      check(!_this->is_frozen, "token is frozen");
+   void token_contract::token::issue(name to, extended_asset value) {
+      require_auth(value.contract);
+      check_asset_is_valid(value);
+      check(!_this->get_opt(opt::is_frozen), "token is frozen");
 
       //TODO: check game account
-      check(quantity.quantity.symbol == _this->supply.symbol, "symbol precision mismatch");
-      check(quantity.quantity.amount <= _this->max_supply.amount - _this->supply.amount, "quantity exceeds available supply");
+      check(value.quantity.symbol == _this->supply.symbol, "symbol precision mismatch");
+      check(value.quantity.amount <= _this->get_max_supply().amount - _this->supply.amount, "quantity exceeds available supply");
 
       _tbl.modify(_this, same_payer, [&](auto& s) {
-         s.supply += quantity.quantity;
+         s.supply += value.quantity;
       });
 
       auto _to = get_account(to);
 
-      if (_this->can_recall && (to != quantity.contract))
-         _to.add_deposit(quantity);
+      if (_this->get_opt(opt::can_recall) && (to != value.contract))
+         _to.add_deposit(value);
       else
-         _to.add_balance(quantity);
+         _to.add_balance(value);
 
    }
 
-   void token_contract::token::retire(name owner, extended_asset quantity) {
+   void token_contract::token::retire(name owner, extended_asset value) {
       require_auth(owner);
-      check_asset_is_valid(quantity);
-      check(!_this->is_frozen, "token is frozen");
+      check_asset_is_valid(value);
+      check(!_this->get_opt(opt::is_frozen), "token is frozen");
 
       //TODO: check game account
-      check(quantity.quantity.symbol == _this->supply.symbol, "symbol precision mismatch");
+      check(value.quantity.symbol == _this->supply.symbol, "symbol precision mismatch");
 
       _tbl.modify(_this, same_payer, [&](auto& s) {
-         s.supply -= quantity.quantity;
+         s.supply -= value.quantity;
       });
 
       auto _to = get_account(owner);
 
-      if (_this->can_recall && (owner != quantity.contract))
-         _to.sub_deposit(quantity);
+      if (_this->get_opt(opt::can_recall) && (owner != value.contract))
+         _to.sub_deposit(value);
       else
-         _to.sub_balance(quantity);
+         _to.sub_balance(value);
    }
 
-   void token_contract::token::burn(extended_asset quantity) {
-      require_auth(quantity.contract);
-      check_asset_is_valid(quantity);
-      check(!_this->is_frozen, "token is frozen");
+   void token_contract::token::burn(extended_asset value) {
+      require_auth(value.contract);
+      check_asset_is_valid(value);
+      check(!_this->get_opt(opt::is_frozen), "token is frozen");
 
       //TODO: check game account
-      check(quantity.quantity.symbol == _this->supply.symbol, "symbol precision mismatch");
+      check(value.quantity.symbol == _this->supply.symbol, "symbol precision mismatch");
 
       _tbl.modify(_this, same_payer, [&](auto& s) {
-         s.supply -= quantity.quantity;
-         s.max_supply -= quantity.quantity;
+         s.supply -= value.quantity;
+         s.set_max_supply(s.get_max_supply() - value.quantity);
       });
 
-      get_account(quantity.contract).sub_balance(quantity);
+      get_account(value.contract).sub_balance(value);
    }
 
-   void token_contract::token::transfer(name from, name to, extended_asset quantity) {
+   void token_contract::token::transfer(name from, name to, extended_asset value) {
       check(from != to, "cannot transfer to self");
       check(is_account(to), "`to` account does not exist");
 
-      check_asset_is_valid(quantity);
-      check(!_this->is_frozen, "token is frozen");
+      check_asset_is_valid(value);
+      check(!_this->get_opt(opt::is_frozen), "token is frozen");
 
       bool is_recall = false;
 
       if (!has_auth(from)) {
-         check(_this->can_recall && has_auth(quantity.contract), "Missing required authority");
+         check(_this->get_opt(opt::can_recall) && has_auth(value.contract), "Missing required authority");
          is_recall = true;
       }
 
@@ -148,17 +147,17 @@ namespace gxc {
       auto _from = get_account(from);
 
       if (!is_recall)
-         _from.sub_balance(quantity);
+         _from.sub_balance(value);
       else
-         _from.sub_deposit(quantity);
+         _from.sub_deposit(value);
 
       // add asset to `to`
-      get_account(to).add_balance(quantity);
+      get_account(to).add_balance(value);
    }
 
    void token_contract::token::deposit(name owner, extended_asset value) {
       check_asset_is_valid(value);
-      check(_this->can_recall, "not supported token");
+      check(_this->get_opt(opt::can_recall), "not supported token");
 
       auto _owner = get_account(owner);
       auto _req = requests(code(), owner,
@@ -182,7 +181,7 @@ namespace gxc {
             get_account(code()).sub_balance(value);
          } else {
             require_auth(owner);
-            auto recallable = _req->quantity - _this->withdraw_min_amount;
+            auto recallable = _req->quantity - _this->get_withdraw_min_amount();
 
             if (recallable > value.quantity) {
                _req.modify(same_payer, [&](auto& rq) {
@@ -206,8 +205,8 @@ namespace gxc {
       check_asset_is_valid(value);
       require_auth(owner);
 
-      check(_this->can_recall, "not supported token");
-      check(value.quantity >= _this->withdraw_min_amount, "withdraw amount is too small");
+      check(_this->get_opt(opt::can_recall), "not supported token");
+      check(value.quantity >= _this->get_withdraw_min_amount(), "withdraw amount is too small");
 
       auto _req = requests(code(), owner,
                            extended_symbol_code(value.quantity.symbol, value.contract).raw());

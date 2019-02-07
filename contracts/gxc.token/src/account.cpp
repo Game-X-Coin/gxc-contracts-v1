@@ -14,10 +14,10 @@ namespace gxc {
          for (auto o : opts) {
             if (o.key == "frozen") {
                check((*_st)->can_freeze, "not configured to freeze account");
-               a.set_opt(account_balance::opt::frozen, static_cast<bool>(o.value[0]));
+               a.set_opt(opt::frozen, static_cast<bool>(o.value[0]));
             } else if (o.key == "whitelist") {
                check((*_st)->can_whitelist, "not configured to whitelist account");
-               a.set_opt(account_balance::opt::whitelist, static_cast<bool>(o.value[0]));
+               a.set_opt(opt::whitelist, static_cast<bool>(o.value[0]));
             } else {
                check(false, "unknown option `" + o.key + "`");
             }
@@ -29,7 +29,7 @@ namespace gxc {
       check_account_is_valid();
       check(_this->balance.amount >= value.quantity.amount, "overdrawn balance");
 
-      if (!_this->get_opt(account_balance::opt::whitelist) &&
+      if (!_this->get_opt(opt::whitelist) &&
           _this->balance.amount == value.quantity.amount &&
           _this->get_deposit().amount == 0)
       {
@@ -62,7 +62,7 @@ namespace gxc {
       check_account_is_valid();
       check(_this->get_deposit().amount >= value.quantity.amount, "overdrawn deposit");
 
-      if (!_this->get_opt(account_balance::opt::whitelist) &&
+      if (!_this->get_opt(opt::whitelist) &&
           _this->get_deposit().amount == value.quantity.amount &&
           _this->balance.amount == 0)
       {

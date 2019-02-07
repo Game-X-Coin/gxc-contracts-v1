@@ -52,7 +52,7 @@ namespace gxc {
       struct [[eosio::table("accounts"), eosio::contract("gxc.token")]] account_balance {
          enum opt {
             frozen = 0,
-            whitelist = 1
+            whitelist
          };
 
          asset     balance;  // 16
@@ -65,7 +65,7 @@ namespace gxc {
             check(quantity.symbol == balance.symbol, "symbol mismatch");
             _deposit = quantity.amount;
          }
-         bool get_opt(opt option)const { return _id & (0x1 << (56 + option)); }
+         bool get_opt(opt option)const { return (_id >> (56 + option)) & 0x1; }
          void set_opt(opt option, bool val) { _id |= (val & 0x1) << (56 + option); }
          void set_primary_key(uint64_t id) {
             check(id <= 0x00FFFFFFFFFFFFFFULL, "uppermost byte of `_id` is reserved for options");
@@ -79,21 +79,39 @@ namespace gxc {
       };
 
       struct [[eosio::table("stat"), eosio::contract("gxc.token")]] currency_stats {
-         asset    supply;
-         asset    max_supply;
-         name     issuer;
-         asset    withdraw_min_amount;
-         uint32_t withdraw_delay_sec  = 24 * 3600; // 1 day
-         bool     can_freeze          = true;
-         bool     can_recall          = true;
-         bool     can_whitelist       = false;
-         bool     is_frozen           = false;
-         bool     enforce_whitelist   = false;
+         enum opt {
+            can_recall = 0,
+            can_freeze,
+            can_whitelist,
+            is_frozen,
+            enforce_whitelist
+         };
+
+         asset    supply;      // 16
+         int64_t  _max_supply; // 24
+         name     issuer;      // 32
+         int64_t  _withdraw_min_amount; // 40
+         uint32_t withdraw_delay_sec;   // 44
+         uint32_t _opts = 0;            // 48
+
+         asset get_max_supply()const { return asset(_max_supply, supply.symbol); }
+         void set_max_supply(const asset& quantity) {
+            check(quantity.symbol == supply.symbol, "symbol mismatch");
+            _max_supply = quantity.amount;
+         }
+         bool get_opt(opt option)const { return (_opts >> (0 + option)) & 0x1; }
+         void set_opt(opt option, bool val) { _opts |= (val & 0x1) << option; }
+         asset get_withdraw_min_amount()const { return asset(_withdraw_min_amount, supply.symbol); }
+         void set_withdraw_min_amount(const asset& quantity) {
+            check(quantity.symbol == supply.symbol, "symbol mismatch");
+            check(quantity.amount > 0, "withdraw_min_amount should be positive");
+            _withdraw_min_amount = quantity.amount;
+         }
 
          uint64_t primary_key()const { return supply.symbol.code().raw(); }
 
-         EOSLIB_SERIALIZE( currency_stats, (supply)(max_supply)(issuer)(withdraw_min_amount)(withdraw_delay_sec)
-                                           (can_freeze)(can_recall)(can_whitelist)(is_frozen)(enforce_whitelist) )
+         EOSLIB_SERIALIZE( currency_stats, (supply)(_max_supply)(issuer)(_withdraw_min_amount)(withdraw_delay_sec)
+                                           (_opts) )
       };
 
       typedef multi_index<"stat"_n, currency_stats> stat;
@@ -136,6 +154,8 @@ namespace gxc {
 
       class token : public multi_index_item<stat> {
       public:
+         using opt = currency_stats::opt;
+
          token(name receiver, name code, symbol symbol)
          : multi_index_item(receiver, code, symbol.code().raw())
          {}
@@ -170,6 +190,8 @@ namespace gxc {
 
       class account : public multi_index_item<accounts, "symcode"_n, uint128_t> {
       public:
+         using opt = account_balance::opt;
+
          account(name receiver, name code, uint128_t key, const token* st)
          : multi_index_item(receiver, code, key)
          , _st(st)
