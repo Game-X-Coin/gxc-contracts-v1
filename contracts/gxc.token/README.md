@@ -1,45 +1,31 @@
 # gxc.token
 
-Handles actions related to token like create, issue or transfer. The action pushed to this contract is forwarded to sub token contract according to token type.
+Handles actions related to token like create, issue or transfer.
 
-## create (issuer, maximum_supply, type)
+## create (max_supply, opts)
 
-Creates new token, supported token type {"token.sys", "token.std"}
+Creates new token with options
 
 **Required Authorization:** `gxc.token`
 
 |Param|Type|Default|Description|
 |-----|----|-------|-----------|
-|issuer|name||the name of issuer|
-|maximum_supply|asset||the maximum supply of the token|
-|type|name||the type of token (the name of the contract that handles token)|
+|max_supply|extended_asset||maximum supply of token|
+|opts|key_value[]||configurable options for token|
 
-## issue (to, quantity, memo, issuer)
+**Available options**
 
-Issues token (need to create token first)
+|Name|Type|Default|Description|
+|----|----|-------|-----------|
+|can_recall|bool|true|whether issuer can transfer user's token from deposit|
+|can_freeze|bool|true|whether issuer can freeze token or account|
+|can_whitelist|bool|false|whether issuer can make whitelisted users only available to transfer token|
+|is_frozen|bool|false|whether token is frozen|
+|enforce_whitelist|bool|false|whether whitelist feature is turned on|
+|withdraw_min_amount|asset||withdrawable minimum amount|
+|withdraw_delay_sec|uint32||duration in seconds required to withdraw|
 
-**Required Authorization:** `issuer`
-
-|Param|Type|Default|Description|
-|-----|----|-------|-----------|
-|to|name||the name of recipient|
-|quantity|asset||the amount of token|
-|memo|string||the description|
-|issuer|name$||the name of issuer|
-
-## retire (quantity, memo, issuer)
-
-Retires token
-
-**Required Authorization:** `issuer`
-
-|Param|Type|Default|Description|
-|-----|----|-------|-----------|
-|quantity|asset||the amount of token|
-|memo|string||the description|
-|issuer|name$||the name of issuer|
-
-## transfer (from, to, quantity, memo, issuer)
+## transfer (from, to, quantity, memo)
 
 Transfer token from sender to recipient
 
@@ -49,7 +35,107 @@ Transfer token from sender to recipient
 |-----|----|-------|-----------|
 |from|name||the name of sender|
 |to|name||the name of recipient|
-|quantity|asset||the amount of token|
+|quantity|extended_asset||the amount of token|
 |memo|string||the description|
-|issuer|name$||the name of issuer|
+
+## burn (quantity, memo)
+
+Burn token
+
+(differs from sending token to null account `gxc.null`, decrease supply and max_supply at the same time)
+
+**Required Authorization:** `issuer`
+
+|Param|Type|Default|Description|
+|-----|----|-------|-----------|
+|quantity|extended_asset||the amount of token|
+|memo|string||the description|
+
+## setopts (issuer, symbol, opts)
+
+Change options for token
+
+**Required Authorization:** `issuer`
+
+|Param|Type|Default|Description|
+|-----|----|-------|-----------|
+|issuer|name||the name of token issuer|
+|symbol|symbol||the symbol of token to be changed|
+|opts|key_value[]||a set of option and its value|
+
+**Available options**
+
+|Name|Type|Default|Description|
+|----|----|-------|-----------|
+|is_frozen|bool|false|whether token is frozen|
+|enforce_whitelist|bool|false|whether whitelist feature is turned on|
+
+## setacntopts (owner, issuer, symbol, opts)
+
+Change options for account
+
+**Required Authorization:** `issuer`
+
+|Param|Type|Default|Description|
+|-----|----|-------|-----------|
+|owner|name||the name of account owner|
+|issuer|name||the name of token issuer|
+|symbol|symbol||the symbol of token to be changed|
+|opts|key_value[]||a set of option and its value|
+
+**Available options**
+
+|Name|Type|Default|Description|
+|----|----|-------|-----------|
+|frozen|bool|false|whether account is frozen|
+|whitelist|bool|false|whether account is whitelisted|
+
+## open (owner, issuer, symbol, opts)
+
+Open account balance manually (only for token which can whitelist)
+
+**Required Authorization:** `issuer`
+
+|Param|Type|Default|Description|
+|-----|----|-------|-----------|
+|owner|name||the name of account owner|
+|issuer|name||the name of token issuer|
+|symbol|symbol||the symbol of token to be changed|
+|opts|key_value[]||a set of option and its value|
+
+Available options are same to those of `setacntopts`.
+
+## close (owner, issuer, symbol)
+
+Close account balance manually (only for token which can whitelist)
+
+**Required Authorization:** `owner`
+
+|Param|Type|Default|Description|
+|-----|----|-------|-----------|
+|owner|name||the name of account owner|
+|issuer|name||the name of token issuer|
+|symbol|symbol||the symbol of token to be changed|
+
+## deposit (owner, quantity)
+
+Deposit token to be withdrawable by issuer (for in-game use)
+
+**Required Authorization:** `owner` (or `issuer` : allowed to handle withdrawal requested amount only)
+
+|Param|Type|Default|Description|
+|-----|----|-------|-----------|
+|owner|name||the name of account owner|
+|quantity|extended_asset||the amount of token|
+
+## withdraw (owner, quantity)
+
+Withdraw token (for trading or escrow claim), need to wait for a specified duration
+
+**Required Authorization:** `owner`
+
+|Param|Type|Default|Description|
+|-----|----|-------|-----------|
+|owner|name||the name of account owner|
+|quantity|extended_asset||the amount of token|
 

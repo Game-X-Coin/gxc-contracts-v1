@@ -6,8 +6,6 @@ The GXC, the shortening of GameXCoin, is the EOSIO-based blockchain aiming at in
 
    * [gxc.system](https://github.com/Game-X-Coin/gxc.contracts/tree/master/gxc.system)
    * [gxc.token](https://github.com/Game-X-Coin/gxc.contracts/tree/master/gxc.token)
-   * [gxc.systoken](https://github.com/Game-X-Coin/gxc.contracts/tree/master/gxc.systoken)
-   * [gxc.stdtoken](https://github.com/Game-X-Coin/gxc.contracts/tree/master/gxc.stdtoken)
    * [gxc.escrow](https://github.com/Game-X-Coin/gxc.contracts/tree/master/gxc.escrow)
    * [gxc.user](https://github.com/Game-X-Coin/gxc.contracts/tree/master/gxc.user)
    * [gxc.game](https://github.com/Game-X-Coin/gxc.contracts/tree/master/gxc.game)
