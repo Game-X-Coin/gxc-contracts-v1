@@ -20,44 +20,40 @@ namespace gxc {
    }
 
    void token_contract::create(extended_asset max_supply, std::vector<key_value> opts) {
-      token(_self,
-            max_supply.contract,
-            max_supply.quantity.symbol.code().raw()).create(max_supply, opts);
+      token(_self, max_supply).create(max_supply, opts);
    }
 
    void token_contract::setopts(name issuer, symbol symbol, std::vector<key_value> opts) {
-      token(_self, issuer, symbol.code().raw()).setopts(opts);
+      token(_self, issuer, symbol).setopts(opts);
    }
 
    void token_contract::setacntopts(name account, name issuer, symbol symbol, std::vector<key_value> opts) {
-      token(_self, issuer, symbol.code().raw()).get_account(account).setopts(opts);
+      token(_self, issuer, symbol).get_account(account).setopts(opts);
    }
 
-   void token_contract::transfer(name from, name to, extended_asset quantity, std::string memo) {
+   void token_contract::transfer(name from, name to, extended_asset value, std::string memo) {
       check(memo.size() <= 256, "memo has more than 256 bytes");
       check(from != to, "cannot transfer to self");
       check(is_account(to), "`to` account does not exist");
 
-      auto _token = token(_self, quantity.contract, quantity.quantity.symbol.code().raw());
+      auto _token = token(_self, value);
 
       if (from == null_account)
-         _token.issue(to, quantity);
+         _token.issue(to, value);
       else if (to == null_account)
-         _token.retire(from, quantity);
+         _token.retire(from, value);
       else
-         _token.transfer(from, to, quantity);
+         _token.transfer(from, to, value);
    }
 
-   void token_contract::burn(extended_asset quantity, std::string memo) {
+   void token_contract::burn(extended_asset value, std::string memo) {
       check(memo.size() <= 256, "memo has more than 256 bytes");
 
-      auto _token = token(_self, quantity.contract, quantity.quantity.symbol.code().raw());
-      _token.burn(quantity);
+      token(_self, value).burn(value);
    }
 
-
    void token_contract::open(name owner, name issuer, symbol symbol, std::vector<key_value> opts) {
-      auto _token = token(_self, issuer, symbol.code().raw());
+      auto _token = token(_self, issuer, symbol);
       _token.check_symbol_is_valid(symbol);
 
       auto _account = _token.get_account(owner);
@@ -66,15 +62,15 @@ namespace gxc {
    }
 
    void token_contract::close(name owner, name issuer, symbol symbol) {
-      token(_self, issuer, symbol.code().raw()).get_account(owner).close();
+      token(_self, issuer, symbol).get_account(owner).close();
    }
 
-   void token_contract::deposit(name owner, extended_asset quantity) {
-      token(_self, quantity.contract, quantity.quantity.symbol.code().raw()).deposit(owner, quantity);
+   void token_contract::deposit(name owner, extended_asset value) {
+      token(_self, value).deposit(owner, value);
    }
 
-   void token_contract::withdraw(name owner, extended_asset quantity) {
-      token(_self, quantity.contract, quantity.quantity.symbol.code().raw()).withdraw(owner, quantity);
+   void token_contract::withdraw(name owner, extended_asset value) {
+      token(_self, value).withdraw(owner, value);
    }
 }
 

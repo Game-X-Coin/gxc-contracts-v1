@@ -17,8 +17,7 @@ namespace gxc {
          transaction out;
          out.actions.emplace_back(action{{code(), active_permission}, code(), "clearreqs"_n, owner()});
 
-         auto withdraw_delay_sec = token(code(), _it->issuer,
-                                         _it->quantity.symbol.code().raw())->withdraw_delay_sec;
+         auto withdraw_delay_sec = token(code(), _it->issuer, _it->quantity.symbol)->withdraw_delay_sec;
 
          if (_it->requested_time == base_time) {
             out.delay_sec = withdraw_delay_sec;
@@ -43,7 +42,7 @@ namespace gxc {
       check(_it != _idx.end(), "withdrawal requests not found");
 
       for ( ; _it != _idx.end(); _it = _idx.begin()) {
-         auto _token = token(code(), _it->issuer, _it->quantity.symbol.code().raw());
+         auto _token = token(code(), _it->issuer, _it->quantity.symbol);
          if (_it->requested_time + seconds(_token->withdraw_delay_sec) > current_time_point()) break;
 
          _token.get_account(code()).sub_balance(extended_asset(_it->quantity, _it->issuer));

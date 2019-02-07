@@ -121,7 +121,13 @@ namespace gxc {
 
       class token : public multi_index_item<stat> {
       public:
-         using multi_index_item::multi_index_item;
+         token(name receiver, name code, symbol symbol)
+         : multi_index_item(receiver, code, symbol.code().raw())
+         {}
+
+         token(name receiver, extended_asset value)
+         : token(receiver, value.contract, value.quantity.symbol)
+         {}
 
          void create(extended_asset max_supply, const std::vector<key_value>& opts);
          void setopts(const std::vector<key_value>& opts);
