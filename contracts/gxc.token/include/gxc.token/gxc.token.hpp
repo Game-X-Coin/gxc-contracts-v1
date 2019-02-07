@@ -50,17 +50,32 @@ namespace gxc {
       void withdraw(name owner, extended_asset quantity);
 
       struct [[eosio::table("accounts"), eosio::contract("gxc.token")]] account_balance {
-         asset    balance;
-         asset    deposit;
-         name     issuer;
-         bool     frozen    = false;
-         bool     whitelist = false;
-         uint64_t id;
+         enum opt {
+            frozen = 0,
+            whitelist = 1
+         };
 
-         uint64_t  primary_key()const    { return id; }
+         asset     balance;  // 16
+         name      issuer;   // 24
+         int64_t   _deposit; // 32
+         uint64_t  _id;      // 40
+
+         asset get_deposit()const { return asset(_deposit, balance.symbol); }
+         void set_deposit(const asset& quantity) {
+            check(quantity.symbol == balance.symbol, "symbol mismatch");
+            _deposit = quantity.amount;
+         }
+         bool get_opt(opt option)const { return _id & (0x1 << (56 + option)); }
+         void set_opt(opt option, bool val) { _id |= (val & 0x1) << (56 + option); }
+         void set_primary_key(uint64_t id) {
+            check(id <= 0x00FFFFFFFFFFFFFFULL, "uppermost byte of `_id` is reserved for options");
+            _id = (_id & 0xFF00000000000000ULL) | id;
+         }
+
+         uint64_t  primary_key()const    { return _id & 0x00FFFFFFFFFFFFFFULL; }
          uint128_t by_symbol_code()const { return extended_symbol_code(balance.symbol, issuer).raw(); }
 
-         EOSLIB_SERIALIZE( account_balance, (balance)(deposit)(issuer)(frozen)(whitelist)(id) )
+         EOSLIB_SERIALIZE( account_balance, (balance)(issuer)(_deposit)(_id) )
       };
 
       struct [[eosio::table("stat"), eosio::contract("gxc.token")]] currency_stats {

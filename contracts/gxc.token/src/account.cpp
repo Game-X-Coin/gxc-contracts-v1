@@ -14,10 +14,10 @@ namespace gxc {
          for (auto o : opts) {
             if (o.key == "frozen") {
                check((*_st)->can_freeze, "not configured to freeze account");
-               a.frozen = static_cast<bool>(o.value[0]);
+               a.set_opt(account_balance::opt::frozen, static_cast<bool>(o.value[0]));
             } else if (o.key == "whitelist") {
                check((*_st)->can_whitelist, "not configured to whitelist account");
-               a.whitelist = static_cast<bool>(o.value[0]);
+               a.set_opt(account_balance::opt::whitelist, static_cast<bool>(o.value[0]));
             } else {
                check(false, "unknown option `" + o.key + "`");
             }
@@ -29,9 +29,9 @@ namespace gxc {
       check_account_is_valid();
       check(_this->balance.amount >= value.quantity.amount, "overdrawn balance");
 
-      if (!_this->whitelist &&
+      if (!_this->get_opt(account_balance::opt::whitelist) &&
           _this->balance.amount == value.quantity.amount &&
-          _this->deposit.amount == 0)
+          _this->get_deposit().amount == 0)
       {
          _tbl.erase(_this);
       } else {
@@ -45,9 +45,9 @@ namespace gxc {
       if (!exists()) {
          check(!(*_st)->enforce_whitelist || has_auth(value.contract), "required to open balance manually");
          _tbl.emplace(code(), [&](auto& a) {
-            a.id      = _tbl.available_primary_key();
+            a.set_primary_key(_tbl.available_primary_key());
             a.balance = value.quantity;
-            a.deposit = asset(0, value.quantity.symbol);
+            a.set_deposit(asset(0, value.quantity.symbol));
             a.issuer  = value.contract;
          });
       } else {
@@ -60,16 +60,16 @@ namespace gxc {
 
    void token_contract::account::sub_deposit(extended_asset value) {
       check_account_is_valid();
-      check(_this->deposit.amount >= value.quantity.amount, "overdrawn deposit");
+      check(_this->get_deposit().amount >= value.quantity.amount, "overdrawn deposit");
 
-      if (!_this->whitelist &&
-          _this->deposit.amount == value.quantity.amount &&
+      if (!_this->get_opt(account_balance::opt::whitelist) &&
+          _this->get_deposit().amount == value.quantity.amount &&
           _this->balance.amount == 0)
       {
          _tbl.erase(_this);
       } else {
          _tbl.modify(_this, same_payer, [&](auto& a) {
-            a.deposit -= value.quantity;
+            a.set_deposit(a.get_deposit() - value.quantity);
          });
       }
    }
@@ -78,15 +78,15 @@ namespace gxc {
       if (!exists()) {
          check(!(*_st)->enforce_whitelist || has_auth(value.contract), "required to open deposit manually");
          _tbl.emplace(code(), [&](auto& a) {
-            a.id      = _tbl.available_primary_key();
+            a.set_primary_key(_tbl.available_primary_key());
             a.balance = asset(0, value.quantity.symbol);
-            a.deposit = value.quantity;
+            a.set_deposit(value.quantity);
             a.issuer  = value.contract;
          });
       } else {
          check_account_is_valid();
          _tbl.modify(_this, same_payer, [&](auto& a) {
-            a.deposit += value.quantity;
+            a.set_deposit(a.get_deposit() + value.quantity);
          });
       }
    }
@@ -95,9 +95,8 @@ namespace gxc {
       require_auth(issuer());
       check(!exists(), "account balance already exists");
       _tbl.emplace(code(), [&](auto& a) {
-         a.id             = _tbl.available_primary_key();
+         a.set_primary_key(_tbl.available_primary_key());
          a.balance.symbol = (*_st)->supply.symbol;
-         a.deposit.symbol = (*_st)->supply.symbol;
          a.issuer         = (*_st)->issuer;
       });
    }
@@ -105,7 +104,7 @@ namespace gxc {
    void token_contract::account::close() {
       require_auth(owner());
       check(exists(), "account balance doesn't exist");
-      check(!_this->balance.amount && !_this->deposit.amount, "cannot close non-zero balance");
+      check(!_this->balance.amount && !_this->get_deposit().amount, "cannot close non-zero balance");
       _tbl.erase(_this);
    }
 }
