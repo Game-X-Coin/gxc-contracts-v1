@@ -1,6 +1,6 @@
 # gxc.contracts
 
-## Version : 1.5.0
+## Version : 1.5.1
 
 The GXC, the shortening of GameXCoin, is the EOSIO-based blockchain aiming at integrating __GAMES__ into crypto platform. To accomplish this purpose, GXC has different policies on operations such as account creation, privileged accounts, resource management etc. This repository contains examples of smart contracts which would be deployed to GXC mainnet. They are provided for reference purposes and can be changed anytime to enhance their features or fix errors.
 
@@ -19,8 +19,8 @@ The following contracts are not migrated yet, but can be used in boot step.
 `libraries` contains common files are used in several contracts, but their APIs are not stable. Be careful when including them to your own contract.
 
 Dependencies:
-* [gxc v1.5.x](https://github.com/Game-X-Coin/gxc/releases/tag/v1.5.2)
-* [eosio.cdt v1.4.x](https://github.com/EOSIO/eosio.cdt/releases/tag/v1.4.1)
+* [gxc v1.6.x](https://github.com/Game-X-Coin/gxc/releases/tag/v1.6.1-rc1)
+* [eosio.cdt v1.5.x](https://github.com/EOSIO/eosio.cdt/releases/tag/v1.5.0)
 
 To build the contracts and the unit tests:
 * First, ensure that your __gxc__ is compiled to the core symbol for the GXC blockchain that intend to deploy to.
