@@ -13,10 +13,10 @@ namespace gxc {
       _tbl.modify(_this, same_payer, [&](auto& a) {
          for (auto o : opts) {
             if (o.key == "frozen") {
-               check((*_st)->can_freeze, "not configured to freeze account");
+               check((*_st)->get_opt(token::opt::can_freeze), "not configured to freeze account");
                a.set_opt(opt::frozen, static_cast<bool>(o.value[0]));
             } else if (o.key == "whitelist") {
-               check((*_st)->can_whitelist, "not configured to whitelist account");
+               check((*_st)->get_opt(token::opt::can_whitelist), "not configured to whitelist account");
                a.set_opt(opt::whitelist, static_cast<bool>(o.value[0]));
             } else {
                check(false, "unknown option `" + o.key + "`");
@@ -43,7 +43,7 @@ namespace gxc {
 
    void token_contract::account::add_balance(extended_asset value) {
       if (!exists()) {
-         check(!(*_st)->enforce_whitelist || has_auth(value.contract), "required to open balance manually");
+         check(!(*_st)->get_opt(token::opt::enforce_whitelist) || has_auth(value.contract), "required to open balance manually");
          _tbl.emplace(code(), [&](auto& a) {
             a.set_primary_key(_tbl.available_primary_key());
             a.balance = value.quantity;
@@ -76,7 +76,7 @@ namespace gxc {
 
    void token_contract::account::add_deposit(extended_asset value) {
       if (!exists()) {
-         check(!(*_st)->enforce_whitelist || has_auth(value.contract), "required to open deposit manually");
+         check(!(*_st)->get_opt(token::opt::enforce_whitelist) || has_auth(value.contract), "required to open deposit manually");
          _tbl.emplace(code(), [&](auto& a) {
             a.set_primary_key(_tbl.available_primary_key());
             a.balance = asset(0, value.quantity.symbol);

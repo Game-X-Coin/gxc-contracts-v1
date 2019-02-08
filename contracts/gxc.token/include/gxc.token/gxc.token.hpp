@@ -199,8 +199,8 @@ namespace gxc {
 
          void check_account_is_valid() {
             if (code() != owner()) {
-               check(!_this->frozen, "account is frozen");
-               check(!(*_st)->enforce_whitelist || _this->whitelist, "account is not whitelisted");
+               check(!_this->get_opt(opt::frozen), "account is frozen");
+               check(!(*_st)->get_opt(token::opt::enforce_whitelist) || _this->get_opt(opt::whitelist), "account is not whitelisted");
             }
          }
 
