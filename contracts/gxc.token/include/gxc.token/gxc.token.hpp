@@ -69,7 +69,10 @@ namespace gxc {
             _deposit = quantity.amount;
          }
          bool get_opt(opt option)const { return (_id >> (56 + option)) & 0x1; }
-         void set_opt(opt option, bool val) { _id |= (val & 0x1) << (56 + option); }
+         void set_opt(opt option, bool val) {
+            if (val) _id |= 0x1 << (56 + option);
+            else     _id &= ~(0x1 << (56 + option));
+         }
          void set_primary_key(uint64_t id) {
             check(id <= 0x00FFFFFFFFFFFFFFULL, "uppermost byte of `_id` is reserved for options");
             _id = (_id & 0xFF00000000000000ULL) | id;
@@ -103,7 +106,10 @@ namespace gxc {
             _max_supply = quantity.amount;
          }
          bool get_opt(opt option)const { return (_opts >> (0 + option)) & 0x1; }
-         void set_opt(opt option, bool val) { _opts |= (val & 0x1) << option; }
+         void set_opt(opt option, bool val) {
+            if (val) _opts |= 0x1 << option;
+            else     _opts &= ~(0x1 << option);
+         }
          asset get_withdraw_min_amount()const { return asset(_withdraw_min_amount, supply.symbol); }
          void set_withdraw_min_amount(const asset& quantity) {
             check(quantity.symbol == supply.symbol, "symbol mismatch");
