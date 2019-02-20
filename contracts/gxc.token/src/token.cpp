@@ -229,7 +229,7 @@ namespace gxc {
          });
       }
 
-      get_account(owner).sub_deposit(value);
+      get_account(owner).sub_deposit(value, true);
       get_account(code()).add_balance(value);
 
       _req.refresh_schedule(ctp + seconds(_this->withdraw_delay_sec));

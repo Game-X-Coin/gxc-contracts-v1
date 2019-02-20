@@ -25,11 +25,11 @@ namespace gxc {
       });
    }
 
-   void token_contract::account::sub_balance(extended_asset value) {
+   void token_contract::account::sub_balance(extended_asset value, bool keep_balance) {
       check_account_is_valid();
       check(_this->balance.amount >= value.quantity.amount, "overdrawn balance");
 
-      if (!_this->get_opt(opt::whitelist) &&
+      if (!_this->get_opt(opt::whitelist) && !keep_balance &&
           _this->balance.amount == value.quantity.amount &&
           _this->get_deposit().amount == 0)
       {
@@ -58,11 +58,11 @@ namespace gxc {
       }
    }
 
-   void token_contract::account::sub_deposit(extended_asset value) {
+   void token_contract::account::sub_deposit(extended_asset value, bool keep_balance) {
       check_account_is_valid();
       check(_this->get_deposit().amount >= value.quantity.amount, "overdrawn deposit");
 
-      if (!_this->get_opt(opt::whitelist) &&
+      if (!_this->get_opt(opt::whitelist) && !keep_balance &&
           _this->get_deposit().amount == value.quantity.amount &&
           _this->balance.amount == 0)
       {

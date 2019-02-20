@@ -227,9 +227,9 @@ namespace gxc {
       private:
          const token* _st;
 
-         void sub_balance(extended_asset value);
+         void sub_balance(extended_asset value, bool keep_balance = false);
          void add_balance(extended_asset value);
-         void sub_deposit(extended_asset value);
+         void sub_deposit(extended_asset value, bool keep_balance = false);
          void add_deposit(extended_asset value);
 
          friend class token;
