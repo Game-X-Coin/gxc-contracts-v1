@@ -94,12 +94,18 @@ namespace gxc {
    }
 
    void token_contract::token::retire(name owner, extended_asset value) {
-      require_auth(owner);
       check_asset_is_valid(value);
       check(!_this->get_opt(opt::is_frozen), "token is frozen");
 
       //TODO: check game account
       check(value.quantity.symbol == _this->supply.symbol, "symbol precision mismatch");
+
+      bool is_recall = false;
+
+      if (!has_auth(owner)) {
+         check(_this->get_opt(opt::can_recall) && has_auth(value.contract), "Missing required authority");
+         is_recall = true;
+      }
 
       _tbl.modify(_this, same_payer, [&](auto& s) {
          s.supply -= value.quantity;
@@ -107,10 +113,10 @@ namespace gxc {
 
       auto _to = get_account(owner);
 
-      if (_this->get_opt(opt::can_recall) && (owner != value.contract))
-         _to.sub_deposit(value);
-      else
+      if (!is_recall)
          _to.sub_balance(value);
+      else
+         _to.sub_deposit(value);
    }
 
    void token_contract::token::burn(extended_asset value) {
