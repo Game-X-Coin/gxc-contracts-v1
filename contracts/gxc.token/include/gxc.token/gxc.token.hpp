@@ -26,10 +26,10 @@ namespace gxc {
       void create(extended_asset max_supply, std::vector<key_value> opts);
 
       [[eosio::action]]
-      void transfer(name from, name to, extended_asset quantity, std::string memo);
+      void transfer(name from, name to, extended_asset value, std::string memo);
 
       [[eosio::action]]
-      void burn(extended_asset quantity, std::string memo);
+      void burn(extended_asset value, std::string memo);
 
       [[eosio::action]]
       void setopts(name issuer, symbol symbol, std::vector<key_value> opts);
@@ -44,10 +44,10 @@ namespace gxc {
       void close(name owner, name issuer, symbol symbol);
 
       [[eosio::action]]
-      void deposit(name owner, extended_asset quantity);
+      void deposit(name owner, extended_asset value);
 
       [[eosio::action]]
-      void withdraw(name owner, extended_asset quantity);
+      void withdraw(name owner, extended_asset value);
 
       [[eosio::action]]
       void clearreqs(name owner);
