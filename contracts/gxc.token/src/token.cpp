@@ -166,19 +166,19 @@ namespace gxc {
       check(_this->get_opt(opt::can_recall), "not supported token");
 
       auto _owner = get_account(owner);
-      auto _req = requests(code(), owner,
-                           extended_symbol_code(value.quantity.symbol, value.contract).raw());
+      auto _req = requests(code(), owner, value);
+
       if (!_req.exists()) {
          require_auth(owner);
          _owner.sub_balance(value);
       } else {
          if (has_auth(issuer())) {
-            auto recallable = _req->quantity - value.quantity;
+            auto recallable = _req->value.quantity - value.quantity;
             check(recallable.amount >= 0, "cannot deposit more than withdrawal requested by issuer");
 
             if (recallable.amount > 0)
                _req.modify(same_payer, [&](auto& rq) {
-                  rq.quantity -= value.quantity;
+                  rq.value -= value;
                });
             else {
                _req.erase();
@@ -187,11 +187,11 @@ namespace gxc {
             get_account(code()).sub_balance(value);
          } else {
             require_auth(owner);
-            auto recallable = _req->quantity - _this->get_withdraw_min_amount();
+            auto recallable = _req->value.quantity - _this->get_withdraw_min_amount();
 
             if (recallable > value.quantity) {
                _req.modify(same_payer, [&](auto& rq) {
-                  rq.quantity -= value.quantity;
+                  rq.value -= value;
                });
                get_account(code()).sub_balance(value);
             } else {
@@ -214,21 +214,18 @@ namespace gxc {
       check(_this->get_opt(opt::can_recall), "not supported token");
       check(value.quantity >= _this->get_withdraw_min_amount(), "withdraw amount is too small");
 
-      auto _req = requests(code(), owner,
-                           extended_symbol_code(value.quantity.symbol, value.contract).raw());
+      auto _req = requests(code(), owner, value);
       auto ctp = current_time_point();
 
       if (_req.exists()) {
          _req.modify(same_payer, [&](auto& rq) {
             rq.scheduled_time = ctp + seconds(_this->withdraw_delay_sec);
-            rq.quantity += value.quantity;
+            rq.value += value;
          });
       } else {
          _req.emplace(owner, [&](auto& rq) {
-            rq.id             = _req.table().available_primary_key();
             rq.scheduled_time = ctp + seconds(_this->withdraw_delay_sec);
-            rq.quantity       = value.quantity;
-            rq.issuer         = value.contract;
+            rq.value          = value;
          });
       }
 

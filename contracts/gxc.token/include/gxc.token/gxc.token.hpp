@@ -11,6 +11,7 @@
 #include <gxclib/symbol.hpp>
 #include <gxclib/key_value.hpp>
 #include <gxclib/multi_index.hpp>
+#include <gxclib/fasthash.h>
 
 using namespace eosio;
 
@@ -129,20 +130,21 @@ namespace gxc {
               > accounts;
 
       struct [[eosio::table("withdraws"), eosio::contract("gxc.token")]] withdrawal_request {
-         asset          quantity;
-         name           issuer;
+         extended_asset value;
          time_point_sec scheduled_time;
-         uint64_t       id;
 
-         uint64_t  primary_key()const       { return id; }
-         uint128_t by_symbol_code()const    { return extended_symbol_code(quantity.symbol, issuer).raw(); }
-         uint64_t  by_scheduled_time()const { return static_cast<uint64_t>(scheduled_time.utc_seconds); }
-
-         EOSLIB_SERIALIZE( withdrawal_request, (quantity)(issuer)(scheduled_time)(id) )
+         static constexpr uint64_t seed = name("withdraws").value;
+         static uint64_t get_id(extended_asset value) {
+            auto sym_code = extended_symbol_code(value.quantity.symbol, value.contract);
+            return fasthash64(reinterpret_cast<const void*>(&sym_code), sizeof(uint128_t), seed);
+         }
+         uint64_t primary_key()const       { return get_id(this->value); }
+         uint64_t by_scheduled_time()const { return static_cast<uint64_t>(scheduled_time.utc_seconds); }
+ 
+         EOSLIB_SERIALIZE( withdrawal_request, (value)(scheduled_time) )
       };
 
       typedef multi_index<"withdraws"_n, withdrawal_request,
-                 indexed_by<"symcode"_n, const_mem_fun<withdrawal_request, uint128_t, &withdrawal_request::by_symbol_code>>,
                  indexed_by<"schedtime"_n, const_mem_fun<withdrawal_request, uint64_t, &withdrawal_request::by_scheduled_time>>
               > withdraws;
 
@@ -238,9 +240,13 @@ namespace gxc {
          return time_point(microseconds(static_cast<int64_t>(current_time())));
       }
 
-      class requests : public multi_index_item<withdraws, "symcode"_n, uint128_t> {
+      class requests : public multi_index_item<withdraws> {
       public:
          using multi_index_item::multi_index_item;
+
+         requests(name receiver, name code, extended_asset value)
+         : multi_index_item(receiver, code, withdrawal_request::get_id(value))
+         {}
 
          void refresh_schedule(time_point_sec base_time = current_time_point());
          void clear();

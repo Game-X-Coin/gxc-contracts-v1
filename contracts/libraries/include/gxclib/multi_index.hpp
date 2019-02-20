@@ -97,8 +97,8 @@ namespace eosio {
       }
 
       template<typename Lambda>
-      void modify(Lambda&& updater) {
-         _tbl.modify(_this, same_payer, std::forward<Lambda&&>(updater));
+      void modify(name payer, Lambda&& updater) {
+         _tbl.modify(_this, payer, std::forward<Lambda&&>(updater));
       }
 
       void erase() { _tbl.erase(_this); }
