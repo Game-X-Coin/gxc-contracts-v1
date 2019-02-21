@@ -23,21 +23,22 @@ namespace gxc {
 
          for (auto o : opts) {
             if (o.key == "can_recall") {
-               t.set_opt(opt::can_recall, static_cast<bool>(o.value[0]));
+               t.set_opt(opt::can_recall, unpack<bool>(o.value));
             } else if (o.key == "can_freeze") {
-               t.set_opt(opt::can_freeze, static_cast<bool>(o.value[0]));
+               t.set_opt(opt::can_freeze, unpack<bool>(o.value));
             } else if (o.key == "can_whitelist") {
-               t.set_opt(opt::can_whitelist, static_cast<bool>(o.value[0]));
+               t.set_opt(opt::can_whitelist, unpack<bool>(o.value));
             } else if (o.key == "is_frozen") {
-               t.set_opt(opt::is_frozen, static_cast<bool>(o.value[0]));
+               t.set_opt(opt::is_frozen, unpack<bool>(o.value));
             } else if (o.key == "enforce_whitelist") {
-               t.set_opt(opt::enforce_whitelist, static_cast<bool>(o.value[0]));
+               t.set_opt(opt::enforce_whitelist, unpack<bool>(o.value));
             } else if (o.key == "withdraw_min_amount") {
-               check(o.value.size() == sizeof(asset), "invalid serialization");
-               t.set_withdraw_min_amount(*reinterpret_cast<asset*>(o.value.data()));
+               auto value = unpack<int64_t>(o.value);
+               check(value >= 0, "withdraw_min_amount should be positive");
+               t.set_withdraw_min_amount(asset(value, t.supply.symbol));
             } else if (o.key == "withdraw_delay_sec") {
-               check(o.value.size() == sizeof(uint32_t), "invalid serialization");
-               t.withdraw_delay_sec = *reinterpret_cast<uint32_t*>(o.value.data());
+               auto value = unpack<uint64_t>(o.value);
+               t.withdraw_delay_sec = static_cast<uint32_t>(value);
             } else {
                check(false, "unknown option `" + o.key + "`");
             }
@@ -52,18 +53,18 @@ namespace gxc {
       check(opts.size(), "no changes on options");
       require_auth(issuer());
 
-      _tbl.modify(_this, same_payer, [&](auto& s) {
+      _tbl.modify(_this, same_payer, [&](auto& t) {
          for (auto o : opts) {
             if (o.key == "is_frozen") {
-               check(s.get_opt(opt::can_freeze), "not allowed to freeze token");
-               auto value = static_cast<bool>(o.value[0]);
-               check(s.get_opt(opt::is_frozen) != value, "option already has given value");
-               s.set_opt(opt::is_frozen, value);
+               check(t.get_opt(opt::can_freeze), "not allowed to freeze token");
+               auto value = unpack<bool>(o.value);
+               check(t.get_opt(opt::is_frozen) != value, "option already has given value");
+               t.set_opt(opt::is_frozen, value);
             } else if (o.key == "enforce_whitelist") {
-               check(s.get_opt(opt::can_whitelist), "not allowed to apply whitelist");
-               auto value = static_cast<bool>(o.value[0]);
-               check(s.get_opt(opt::enforce_whitelist) != value, "option already has given value");
-               s.set_opt(opt::enforce_whitelist, value);
+               check(t.get_opt(opt::can_whitelist), "not allowed to apply whitelist");
+               auto value = unpack<bool>(o.value);
+               check(t.get_opt(opt::enforce_whitelist) != value, "option already has given value");
+               t.set_opt(opt::enforce_whitelist, value);
             } else {
                check(false, "unknown option `" + o.key + "`");
             }
