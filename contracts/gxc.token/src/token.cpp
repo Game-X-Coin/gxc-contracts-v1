@@ -51,7 +51,7 @@ namespace gxc {
 
    void token_contract::token::setopts(const std::vector<key_value>& opts) {
       check(opts.size(), "no changes on options");
-      require_auth(issuer());
+      require_vauth(issuer());
 
       _tbl.modify(_this, same_payer, [&](auto& t) {
          for (auto o : opts) {
@@ -73,7 +73,7 @@ namespace gxc {
    }
 
    void token_contract::token::issue(name to, extended_asset value) {
-      require_auth(value.contract);
+      require_vauth(value.contract);
       check_asset_is_valid(value);
       check(!_this->get_opt(opt::is_frozen), "token is frozen");
 
@@ -104,7 +104,7 @@ namespace gxc {
       bool is_recall = false;
 
       if (!has_auth(owner)) {
-         check(_this->get_opt(opt::can_recall) && has_auth(value.contract), "Missing required authority");
+         check(_this->get_opt(opt::can_recall) && has_vauth(value.contract), "Missing required authority");
          is_recall = true;
       }
 
@@ -121,7 +121,7 @@ namespace gxc {
    }
 
    void token_contract::token::burn(extended_asset value) {
-      require_auth(value.contract);
+      require_vauth(value.contract);
       check_asset_is_valid(value);
       check(!_this->get_opt(opt::is_frozen), "token is frozen");
 
@@ -146,7 +146,7 @@ namespace gxc {
       bool is_recall = false;
 
       if (!has_auth(from)) {
-         check(_this->get_opt(opt::can_recall) && has_auth(value.contract), "Missing required authority");
+         check(_this->get_opt(opt::can_recall) && has_vauth(value.contract), "Missing required authority");
          is_recall = true;
       }
 
@@ -173,7 +173,7 @@ namespace gxc {
          require_auth(owner);
          _owner.sub_balance(value);
       } else {
-         if (has_auth(issuer())) {
+         if (has_vauth(issuer())) {
             auto recallable = _req->value.quantity - value.quantity;
             check(recallable.amount >= 0, "cannot deposit more than withdrawal requested by issuer");
 

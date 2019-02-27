@@ -12,6 +12,7 @@
 #include <gxclib/key_value.hpp>
 #include <gxclib/multi_index.hpp>
 #include <gxclib/fasthash.h>
+#include <gxclib/action.hpp>
 
 using namespace eosio;
 

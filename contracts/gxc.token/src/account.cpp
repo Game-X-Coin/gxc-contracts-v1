@@ -8,7 +8,7 @@ namespace gxc {
 
    void token_contract::account::setopts(const std::vector<key_value>& opts) {
       check(opts.size(), "no changes on options");
-      require_auth(issuer());
+      require_vauth(issuer());
 
       _tbl.modify(_this, same_payer, [&](auto& a) {
          for (auto o : opts) {
@@ -47,7 +47,7 @@ namespace gxc {
 
    void token_contract::account::add_balance(extended_asset value) {
       if (!exists()) {
-         check(!(*_st)->get_opt(token::opt::enforce_whitelist) || has_auth(value.contract), "required to open balance manually");
+         check(!(*_st)->get_opt(token::opt::enforce_whitelist) || has_vauth(value.contract), "required to open balance manually");
          _tbl.emplace(code(), [&](auto& a) {
             a.set_primary_key(_tbl.available_primary_key());
             a.balance = value.quantity;
@@ -80,7 +80,7 @@ namespace gxc {
 
    void token_contract::account::add_deposit(extended_asset value) {
       if (!exists()) {
-         check(!(*_st)->get_opt(token::opt::enforce_whitelist) || has_auth(value.contract), "required to open deposit manually");
+         check(!(*_st)->get_opt(token::opt::enforce_whitelist) || has_vauth(value.contract), "required to open deposit manually");
          _tbl.emplace(code(), [&](auto& a) {
             a.set_primary_key(_tbl.available_primary_key());
             a.balance = asset(0, value.quantity.symbol);
@@ -96,7 +96,7 @@ namespace gxc {
    }
 
    void token_contract::account::open() {
-      require_auth(issuer());
+      require_vauth(issuer());
       if (!exists()) {
          _tbl.emplace(code(), [&](auto& a) {
             a.set_primary_key(_tbl.available_primary_key());
