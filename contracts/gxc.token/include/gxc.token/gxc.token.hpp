@@ -53,6 +53,11 @@ namespace gxc {
       [[eosio::action]]
       void clearreqs(name owner);
 
+      static uint64_t get_id(const extended_asset& value, uint64_t seed) {
+         auto sym_code = extended_symbol_code(value.quantity.symbol, value.contract);
+         return fasthash64(reinterpret_cast<const void*>(&sym_code), sizeof(uint128_t), seed);
+      }
+
       struct [[eosio::table("accounts"), eosio::contract("gxc.token")]] account_balance {
          enum opt {
             frozen = 0,
@@ -60,30 +65,34 @@ namespace gxc {
          };
 
          asset     balance;  // 16
-         name      issuer;   // 24
+         name      _issuer;  // 24, the lowest 4 bits assigned to opts
          int64_t   _deposit; // 32
-         uint64_t  _id;      // 40
 
+         name get_issuer()const { return name(_issuer.value & 0xFFFFFFFFFFFFFFF0ULL); }
+         void set_issuer(name issuer) { _issuer = name((_issuer.value & 0xF) | issuer.value); }
          asset get_deposit()const { return asset(_deposit, balance.symbol); }
          void set_deposit(const asset& quantity) {
             check(quantity.symbol == balance.symbol, "symbol mismatch");
             _deposit = quantity.amount;
          }
-         bool get_opt(opt option)const { return (_id >> (56 + option)) & 0x1; }
+         bool get_opt(opt option)const { return (_issuer.value >> (0 + option)) & 0x1; }
          void set_opt(opt option, bool val) {
-            if (val) _id |= 0x1 << (56 + option);
-            else     _id &= ~(0x1 << (56 + option));
-         }
-         void set_primary_key(uint64_t id) {
-            check(id <= 0x00FFFFFFFFFFFFFFULL, "uppermost byte of `_id` is reserved for options");
-            _id = (_id & 0xFF00000000000000ULL) | id;
+            if (val) _issuer.value |= 0x1 << option;
+            else     _issuer.value &= ~(0x1 << option);
          }
 
-         uint64_t  primary_key()const    { return _id & 0x00FFFFFFFFFFFFFFULL; }
-         uint128_t by_symbol_code()const { return extended_symbol_code(balance.symbol, issuer).raw(); }
+         static constexpr uint64_t seed = name("accounts").value;
+         static uint64_t get_id(extended_asset value) { return token_contract::get_id(value, seed); }
 
-         EOSLIB_SERIALIZE( account_balance, (balance)(issuer)(_deposit)(_id) )
+         uint64_t primary_key()const { return get_id(extended_asset(balance, get_issuer())); }
+         uint64_t by_issuer()const   { return _issuer.value & 0xFFFFFFFFFFFFFFF0ULL; }
+
+         EOSLIB_SERIALIZE( account_balance, (balance)(_issuer)(_deposit) )
       };
+
+      typedef multi_index<"accounts"_n, account_balance,
+                 indexed_by<"issuer"_n, const_mem_fun<account_balance, uint64_t, &account_balance::by_issuer>>
+              > accounts;
 
       struct [[eosio::table("stat"), eosio::contract("gxc.token")]] currency_stats {
          enum opt {
@@ -125,19 +134,14 @@ namespace gxc {
       };
 
       typedef multi_index<"stat"_n, currency_stats> stat;
-      typedef multi_index<"accounts"_n, account_balance,
-                 indexed_by<"symcode"_n, const_mem_fun<account_balance, uint128_t, &account_balance::by_symbol_code>>
-              > accounts;
 
       struct [[eosio::table("withdraws"), eosio::contract("gxc.token")]] withdrawal_request {
          extended_asset value;
          time_point_sec scheduled_time;
 
          static constexpr uint64_t seed = name("withdraws").value;
-         static uint64_t get_id(extended_asset value) {
-            auto sym_code = extended_symbol_code(value.quantity.symbol, value.contract);
-            return fasthash64(reinterpret_cast<const void*>(&sym_code), sizeof(uint128_t), seed);
-         }
+         static uint64_t get_id(extended_asset value) { return token_contract::get_id(value, seed); }
+
          uint64_t primary_key()const       { return get_id(this->value); }
          uint64_t by_scheduled_time()const { return static_cast<uint64_t>(scheduled_time.utc_seconds); }
  
@@ -190,20 +194,18 @@ namespace gxc {
 
          account get_account(name owner)const {
             check(exists(), "token not found");
-            auto _account = account(code(), owner,
-                                    extended_symbol_code(_this->supply.symbol,
-                                                         _this->issuer).raw(), this);
+            auto _account = account(code(), owner, account_balance::get_id(extended_asset(asset(0, _this->supply.symbol), _this->issuer)), this);
             return _account;
          }
 
          inline name issuer()const { return scope(); }
       };
 
-      class account : public multi_index_item<accounts, "symcode"_n, uint128_t> {
+      class account : public multi_index_item<accounts> {
       public:
          using opt = account_balance::opt;
 
-         account(name receiver, name code, uint128_t key, const token* st)
+         account(name receiver, name code, uint64_t key, const token* st)
          : multi_index_item(receiver, code, key)
          , _st(st)
          {}

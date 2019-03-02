@@ -49,10 +49,9 @@ namespace gxc {
       if (!exists()) {
          check(!(*_st)->get_opt(token::opt::enforce_whitelist) || has_auth(value.contract), "required to open balance manually");
          _tbl.emplace(code(), [&](auto& a) {
-            a.set_primary_key(_tbl.available_primary_key());
             a.balance = value.quantity;
             a.set_deposit(asset(0, value.quantity.symbol));
-            a.issuer  = value.contract;
+            a.set_issuer(value.contract);
          });
       } else {
          check_account_is_valid();
@@ -82,10 +81,9 @@ namespace gxc {
       if (!exists()) {
          check(!(*_st)->get_opt(token::opt::enforce_whitelist) || has_auth(value.contract), "required to open deposit manually");
          _tbl.emplace(code(), [&](auto& a) {
-            a.set_primary_key(_tbl.available_primary_key());
             a.balance = asset(0, value.quantity.symbol);
             a.set_deposit(value.quantity);
-            a.issuer  = value.contract;
+            a.set_issuer(value.contract);
          });
       } else {
          check_account_is_valid();
@@ -99,9 +97,8 @@ namespace gxc {
       require_auth(issuer());
       if (!exists()) {
          _tbl.emplace(code(), [&](auto& a) {
-            a.set_primary_key(_tbl.available_primary_key());
             a.balance.symbol = (*_st)->supply.symbol;
-            a.issuer         = (*_st)->issuer;
+            a.set_issuer((*_st)->issuer);
          });
       }
    }
