@@ -69,8 +69,12 @@ namespace gxc {
       token(_self, value).deposit(owner, value);
    }
 
-   void token_contract::withdraw(name owner, extended_asset value) {
+   void token_contract::reqwithdraw(name owner, extended_asset value) {
       token(_self, value).withdraw(owner, value);
+   }
+
+   void token_contract::withdraw(name owner, extended_asset value) {
+      /* Do noting, but just for tracking withdraw */
    }
 
    void token_contract::clearreqs(name owner) {
@@ -78,4 +82,4 @@ namespace gxc {
    }
 }
 
-EOSIO_DISPATCH(gxc::token_contract, (create)(transfer)(burn)(setopts)(setacntopts)(open)(close)(deposit)(withdraw)(clearreqs))
+EOSIO_DISPATCH(gxc::token_contract, (create)(transfer)(burn)(setopts)(setacntopts)(open)(close)(deposit)(reqwithdraw)(withdraw)(clearreqs))

@@ -48,6 +48,9 @@ namespace gxc {
       void deposit(name owner, extended_asset value);
 
       [[eosio::action]]
+      void reqwithdraw(name owner, extended_asset value);
+
+      [[eosio::action]]
       void withdraw(name owner, extended_asset value);
 
       [[eosio::action]]

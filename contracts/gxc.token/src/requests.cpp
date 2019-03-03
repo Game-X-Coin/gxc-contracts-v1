@@ -48,6 +48,17 @@ namespace gxc {
          _token.get_account(code()).sub_balance(extended_asset(_it->value.quantity, _it->value.contract));
          _token.get_account(owner()).add_balance(extended_asset(_it->value.quantity, _it->value.contract));
 
+         action receipt;
+         receipt.account = code();
+         receipt.name    = name("withdraw");
+         receipt.data.resize(sizeof(name) + sizeof(extended_asset));
+
+         datastream<char*> ds(receipt.data.data(), receipt.data.size());
+         ds << owner();
+         ds << _it->value;
+
+         receipt.send_context_free();
+
          _idx.erase(_it);
       }
 
