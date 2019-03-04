@@ -119,7 +119,7 @@ void contract::init(unsigned_int version, symbol core) {
    auto itr = _rammarket.find(ramcore_symbol.raw());
    eosio_assert(itr == _rammarket.end(), "system contract has already been initialized");
 
-   auto system_token_supply = token::get_supply(_self, core.code());
+   auto system_token_supply = get_supply(_self, core.code());
    eosio_assert(system_token_supply.symbol == core, "specified core symbol does not exist (precision mismatch)");
    eosio_assert(system_token_supply.amount >= 0, "system token supply must be greater than 0");
 

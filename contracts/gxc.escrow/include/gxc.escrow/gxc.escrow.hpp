@@ -12,7 +12,7 @@
 #include <gxclib/token.hpp>
 
 using namespace eosio;
-using gxc::token::get_float_amount;
+using gxc::get_float_amount;
 using std::string;
 
 namespace gxc {

@@ -112,12 +112,12 @@ void contract::buyram( name payer, name receiver, asset quant ) {
    // If quant.amount == 1, then quant_after_fee.amount == 0 and the next inline transfer will fail causing the buyram action to fail.
 
    action({ {payer, active_permission}, {ram_account, active_permission} },
-      token::account, "transfer"_n, std::make_tuple(payer, ram_account, quant_after_fee, std::string("buy ram"), system::account)
+      token_account, "transfer"_n, std::make_tuple(payer, ram_account, quant_after_fee, std::string("buy ram"), system::account)
    ).send();
 
    if( fee.amount > 0 ) {
       action({ {payer, active_permission} },
-         token::account, "transfer"_n, std::make_tuple(payer, ramfee_account, fee, std::string("ram fee"), system::account)
+         token_account, "transfer"_n, std::make_tuple(payer, ramfee_account, fee, std::string("ram fee"), system::account)
       ).send();
    }
 
@@ -188,14 +188,14 @@ void contract::sellram( name account, int64_t bytes ) {
    set_resource_limits( res_itr->owner.value, res_itr->ram_bytes + ram_gift_bytes, res_itr->net_weight.amount, res_itr->cpu_weight.amount );
 
    action({ {ram_account, active_permission}, {account, active_permission} },
-      token::account, "transfer"_n, std::make_tuple(ram_account, account, asset(tokens_out), std::string("sell ram"), system::account)
+      token_account, "transfer"_n, std::make_tuple(ram_account, account, asset(tokens_out), std::string("sell ram"), system::account)
    ).send();
 
    auto fee = ( tokens_out.amount + 199 ) / 200; /// .5% fee (round up)
    // since tokens_out.amount was asserted to be at least 2 earlier, fee.amount < tokens_out.amount
    if( fee > 0 ) {
       action({ {account, active_permission} },
-         token::account, "transfer"_n, std::make_tuple(account, ramfee_account, asset(fee, core_symbol()), std::string("sell ram fee"), system::account)
+         token_account, "transfer"_n, std::make_tuple(account, ramfee_account, asset(fee, core_symbol()), std::string("sell ram fee"), system::account)
       ).send();
    }
 }
@@ -351,7 +351,7 @@ void contract::changebw( name from, name receiver,
       auto transfer_amount = net_balance + cpu_balance;
       if ( 0 < transfer_amount.amount ) {
          action({ {source_stake_from, active_permission} },
-            token::account, "transfer"_n, std::make_tuple(source_stake_from, stake_account, asset(transfer_amount), std::string("stake bandwidth"), system::account)
+            token_account, "transfer"_n, std::make_tuple(source_stake_from, stake_account, asset(transfer_amount), std::string("stake bandwidth"), system::account)
          ).send();
       }
    }
@@ -394,7 +394,7 @@ void contract::refund( const name owner ) {
                  "refund is not available yet" );
 
    action({ {stake_account, active_permission}, {req->owner, active_permission} },
-      token::account, "transfer"_n, std::make_tuple(stake_account, req->owner, req->net_amount + req->cpu_amount, std::string("unstake"), system::account)
+      token_account, "transfer"_n, std::make_tuple(stake_account, req->owner, req->net_amount + req->cpu_amount, std::string("unstake"), system::account)
    ).send();
 
    refunds_tbl.erase( req );

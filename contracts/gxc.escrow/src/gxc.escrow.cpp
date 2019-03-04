@@ -3,6 +3,7 @@
  * @copyright defined in gxc/LICENSE
  */
 #include <gxc.escrow/gxc.escrow.hpp>
+#include <gxclib/key_value.hpp>
 
 namespace gxc {
 
@@ -22,12 +23,12 @@ void escrow::deposit(name issuer, asset derv, asset base) {
 
    // deposit base asset to escrow
    action(permission_level(_self, system::active_permission),
-      token::account, "transfer"_n, std::make_tuple(issuer, _self, base, string("deposit escrow"), system::account)
+      token_account, "transfer"_n, std::make_tuple(issuer, _self, base, string("deposit escrow"), system::account)
    ).send();
 
    // create derivative token
    action(permission_level(_self, system::active_permission),
-      token::account, "create"_n, std::make_tuple(issuer, derv, token::standard_token)
+      token_account, "create"_n, std::make_tuple(issuer, derv, std::vector<key_value>())
    ).send();
 }
 
@@ -52,21 +53,21 @@ void escrow::claim(name account_name, asset quantity, name issuer) {
 
    // transfer token
    action(permission_level(_self, system::active_permission),
-      token::account, "transfer"_n, std::make_tuple(account_name, _self, quantity, string("claim escrow"), issuer)
+      token_account, "transfer"_n, std::make_tuple(account_name, _self, quantity, string("claim escrow"), issuer)
    ).send();
 
    action(permission_level(_self, system::active_permission),
-      token::account, "transfer"_n, std::make_tuple(_self, issuer, quantity, string("claim escrow"), issuer)
+      token_account, "transfer"_n, std::make_tuple(_self, issuer, quantity, string("claim escrow"), issuer)
    ).send();
 
    // FIXME: exterminate token (not retire)
    action(permission_level(_self, system::active_permission),
-      token::account, "retire"_n, std::make_tuple(quantity, string("claim escrow"), issuer)
+      token_account, "retire"_n, std::make_tuple(quantity, string("claim escrow"), issuer)
    ).send();
 
    // transfer system token
    action(permission_level(_self, system::active_permission),
-      token::account, "transfer"_n, std::make_tuple(_self, account_name, claimed_asset, string("claim escrow"), system::account)
+      token_account, "transfer"_n, std::make_tuple(_self, account_name, claimed_asset, string("claim escrow"), system::account)
    ).send();
 }
 
