@@ -174,12 +174,12 @@ namespace gxc {
          _owner.sub_balance(value);
       } else {
          if (has_vauth(issuer())) {
-            auto recallable = _req->value.quantity - value.quantity;
+            auto recallable = _req->quantity - value.quantity;
             check(recallable.amount >= 0, "cannot deposit more than withdrawal requested by issuer");
 
             if (recallable.amount > 0)
                _req.modify(same_payer, [&](auto& rq) {
-                  rq.value -= value;
+                  rq.quantity -= value.quantity;
                });
             else {
                _req.erase();
@@ -188,11 +188,11 @@ namespace gxc {
             get_account(code()).sub_balance(value);
          } else {
             require_auth(owner);
-            auto recallable = _req->value.quantity - _this->get_withdraw_min_amount();
+            auto recallable = _req->quantity - _this->get_withdraw_min_amount();
 
             if (recallable > value.quantity) {
                _req.modify(same_payer, [&](auto& rq) {
-                  rq.value -= value;
+                  rq.quantity -= value.quantity;
                });
                get_account(code()).sub_balance(value);
             } else {
@@ -221,12 +221,13 @@ namespace gxc {
       if (_req.exists()) {
          _req.modify(same_payer, [&](auto& rq) {
             rq.scheduled_time = ctp + seconds(_this->withdraw_delay_sec);
-            rq.value += value;
+            rq.quantity += value.quantity;
          });
       } else {
          _req.emplace(owner, [&](auto& rq) {
             rq.scheduled_time = ctp + seconds(_this->withdraw_delay_sec);
-            rq.value          = value;
+            rq.quantity       = value.quantity;
+            rq.issuer         = value.contract;
          });
       }
 

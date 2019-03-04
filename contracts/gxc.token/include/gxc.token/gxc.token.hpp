@@ -140,16 +140,17 @@ namespace gxc {
       typedef multi_index<"stat"_n, currency_stats> stat;
 
       struct [[eosio::table("withdraws"), eosio::contract("gxc.token")]] withdrawal_request {
-         extended_asset value;
+         asset          quantity;
+         name           issuer;
          time_point_sec scheduled_time;
 
          static constexpr uint64_t seed = name("withdraws").value;
          static uint64_t get_id(extended_asset value) { return token_contract::get_id(value, seed); }
 
-         uint64_t primary_key()const       { return get_id(this->value); }
+         uint64_t primary_key()const       { return get_id(extended_asset(this->quantity, this->issuer)); }
          uint64_t by_scheduled_time()const { return static_cast<uint64_t>(scheduled_time.utc_seconds); }
  
-         EOSLIB_SERIALIZE( withdrawal_request, (value)(scheduled_time) )
+         EOSLIB_SERIALIZE( withdrawal_request, (quantity)(issuer)(scheduled_time) )
       };
 
       typedef multi_index<"withdraws"_n, withdrawal_request,
