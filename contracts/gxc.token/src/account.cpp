@@ -10,7 +10,7 @@ namespace gxc {
       check(opts.size(), "no changes on options");
       require_vauth(issuer());
 
-      _tbl.modify(_this, same_payer, [&](auto& a) {
+      modify(same_payer, [&](auto& a) {
          for (auto o : opts) {
             if (o.key == "frozen") {
                check((*_st)->get_opt(token::opt::can_freeze), "not configured to freeze account");
@@ -37,9 +37,9 @@ namespace gxc {
           _this->balance.amount == value.quantity.amount &&
           _this->get_deposit().amount == 0)
       {
-         _tbl.erase(_this);
+         erase();
       } else {
-         _tbl.modify(_this, same_payer, [&](auto& a) {
+         modify(same_payer, [&](auto& a) {
             a.balance -= value.quantity;
          });
       }
@@ -48,14 +48,14 @@ namespace gxc {
    void token_contract::account::add_balance(extended_asset value) {
       if (!exists()) {
          check(!(*_st)->get_opt(token::opt::enforce_whitelist) || has_vauth(value.contract), "required to open balance manually");
-         _tbl.emplace(code(), [&](auto& a) {
+         emplace(code(), [&](auto& a) {
             a.balance = value.quantity;
             a.set_deposit(asset(0, value.quantity.symbol));
             a.set_issuer(value.contract);
          });
       } else {
          check_account_is_valid();
-         _tbl.modify(_this, same_payer, [&](auto& a) {
+         modify(same_payer, [&](auto& a) {
             a.balance += value.quantity;
          });
       }
@@ -69,9 +69,9 @@ namespace gxc {
           _this->get_deposit().amount == value.quantity.amount &&
           _this->balance.amount == 0)
       {
-         _tbl.erase(_this);
+         erase();
       } else {
-         _tbl.modify(_this, same_payer, [&](auto& a) {
+         modify(same_payer, [&](auto& a) {
             a.set_deposit(a.get_deposit() - value.quantity);
          });
       }

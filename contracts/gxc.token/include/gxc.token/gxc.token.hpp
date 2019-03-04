@@ -25,7 +25,7 @@ namespace gxc {
       void regtoken(name issuer, symbol symbol, name contract);
 
       [[eosio::action]]
-      void create(extended_asset max_supply, std::vector<key_value> opts);
+      void mint(extended_asset value, std::vector<key_value> opts);
 
       [[eosio::action]]
       void transfer(name from, name to, extended_asset value, std::string memo);
@@ -183,7 +183,7 @@ namespace gxc {
 
    private:
       static void check_asset_is_valid(asset quantity, bool zeroable = false) {
-         check(quantity.symbol.is_valid(), "invalid symbol name");
+         check(quantity.symbol.is_valid(), "invalid symbol name `" + quantity.symbol.code().to_string() + "`");
          check(quantity.is_valid(), "invalid quantity");
          if (zeroable)
             check(quantity.amount >= 0, "must not be negative quantity");
@@ -211,7 +211,7 @@ namespace gxc {
          : token(receiver, value.contract, value.quantity.symbol)
          {}
 
-         void create(extended_asset max_supply, const std::vector<key_value>& opts);
+         void mint(extended_asset value, const std::vector<key_value>& opts);
          void setopts(const std::vector<key_value>& opts);
          void issue(name to, extended_asset quantity);
          void burn(extended_asset quantity);
@@ -231,6 +231,9 @@ namespace gxc {
          }
 
          inline name issuer()const { return scope(); }
+
+      private:
+         void _setopts(const std::vector<key_value>& opts, bool init = false);
       };
 
       class account : public multi_index_item<accounts> {

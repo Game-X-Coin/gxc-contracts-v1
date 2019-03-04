@@ -62,7 +62,7 @@ namespace eosio {
          _tbl.modify(_this, payer, std::forward<Lambda&&>(updater));
       }
 
-      void erase() { _tbl.erase(_this); }
+      void erase() { _this = _tbl.erase(_this); }
    };
 
    template <typename T>
@@ -101,6 +101,6 @@ namespace eosio {
          _tbl.modify(_this, payer, std::forward<Lambda&&>(updater));
       }
 
-      void erase() { _tbl.erase(_this); }
+      void erase() { _this = _tbl.erase(_this); }
    };
 }

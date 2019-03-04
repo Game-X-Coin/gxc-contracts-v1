@@ -7,69 +7,72 @@
 
 namespace gxc {
 
-   void token_contract::token::create(extended_asset max_supply, const std::vector<key_value>& opts) {
+   void token_contract::token::mint(extended_asset value, const std::vector<key_value>& opts) {
       require_auth(code());
 
-      check(!exists(), "token with symbol already exists");
-      check_asset_is_valid(max_supply);
+      //check(!exists(), "token with symbol already exists");
+      check_asset_is_valid(value);
 
       //TODO: check core symbol
       //TODO: check game account
 
-      _tbl.emplace(code(), [&](auto& t) {
-         t.supply.symbol = max_supply.quantity.symbol;
-         t.set_max_supply(max_supply.quantity);
-         t.issuer        = max_supply.contract;
+      bool init = !exists();
 
+      if (init) {
+         emplace(code(), [&](auto& t) {
+            t.supply.symbol = value.quantity.symbol;
+            t.set_max_supply(value.quantity);
+            t.issuer        = value.contract;
+         });
+      } else {
+         modify(same_payer, [&](auto& t) {
+            t.set_max_supply(t.get_max_supply() + value.quantity);
+         });
+      }
+
+      _setopts(opts, init);
+   }
+
+   void token_contract::token::_setopts(const std::vector<key_value>& opts, bool init) {
+      modify(same_payer, [&](auto& t) {
          for (auto o : opts) {
             if (o.key == "can_recall") {
+               check(init, "not allowed to change the option `" + o.key + "`");
                t.set_opt(opt::can_recall, unpack<bool>(o.value));
             } else if (o.key == "can_freeze") {
+               check(init, "not allowed to change the option `" + o.key + "`");
                t.set_opt(opt::can_freeze, unpack<bool>(o.value));
             } else if (o.key == "can_whitelist") {
+               check(init, "not allowed to change the option `" + o.key + "`");
                t.set_opt(opt::can_whitelist, unpack<bool>(o.value));
             } else if (o.key == "is_frozen") {
                t.set_opt(opt::is_frozen, unpack<bool>(o.value));
             } else if (o.key == "enforce_whitelist") {
                t.set_opt(opt::enforce_whitelist, unpack<bool>(o.value));
             } else if (o.key == "withdraw_min_amount") {
+               check(init, "not allowed to change the option `" + o.key + "`");
                auto value = unpack<int64_t>(o.value);
                check(value >= 0, "withdraw_min_amount should be positive");
                t.set_withdraw_min_amount(asset(value, t.supply.symbol));
             } else if (o.key == "withdraw_delay_sec") {
+               check(init, "not allowed to change the option `" + o.key + "`");
                auto value = unpack<uint64_t>(o.value);
                t.withdraw_delay_sec = static_cast<uint32_t>(value);
             } else {
                check(false, "unknown option `" + o.key + "`");
             }
          }
-
-         check(!t.get_opt(opt::is_frozen) || t.get_opt(opt::can_freeze), "not allowed to set frozen ");
-         check(!t.get_opt(opt::enforce_whitelist) || t.get_opt(opt::can_whitelist), "not allowed to set whitelist");
       });
+
+      check(!_this->get_opt(opt::is_frozen) || _this->get_opt(opt::can_freeze), "not allowed to set frozen ");
+      check(!_this->get_opt(opt::enforce_whitelist) || _this->get_opt(opt::can_whitelist), "not allowed to set whitelist");
    }
 
    void token_contract::token::setopts(const std::vector<key_value>& opts) {
       check(opts.size(), "no changes on options");
       require_vauth(issuer());
 
-      _tbl.modify(_this, same_payer, [&](auto& t) {
-         for (auto o : opts) {
-            if (o.key == "is_frozen") {
-               check(t.get_opt(opt::can_freeze), "not allowed to freeze token");
-               auto value = unpack<bool>(o.value);
-               check(t.get_opt(opt::is_frozen) != value, "option already has given value");
-               t.set_opt(opt::is_frozen, value);
-            } else if (o.key == "enforce_whitelist") {
-               check(t.get_opt(opt::can_whitelist), "not allowed to apply whitelist");
-               auto value = unpack<bool>(o.value);
-               check(t.get_opt(opt::enforce_whitelist) != value, "option already has given value");
-               t.set_opt(opt::enforce_whitelist, value);
-            } else {
-               check(false, "unknown option `" + o.key + "`");
-            }
-         }
-      });
+      _setopts(opts);
    }
 
    void token_contract::token::issue(name to, extended_asset value) {
@@ -81,7 +84,7 @@ namespace gxc {
       check(value.quantity.symbol == _this->supply.symbol, "symbol precision mismatch");
       check(value.quantity.amount <= _this->get_max_supply().amount - _this->supply.amount, "quantity exceeds available supply");
 
-      _tbl.modify(_this, same_payer, [&](auto& s) {
+      modify(same_payer, [&](auto& s) {
          s.supply += value.quantity;
       });
 
@@ -108,7 +111,7 @@ namespace gxc {
          is_recall = true;
       }
 
-      _tbl.modify(_this, same_payer, [&](auto& s) {
+      modify(same_payer, [&](auto& s) {
          s.supply -= value.quantity;
       });
 
@@ -121,14 +124,16 @@ namespace gxc {
    }
 
    void token_contract::token::burn(extended_asset value) {
-      require_vauth(value.contract);
+      if (!has_vauth(value.contract)) {
+         require_auth(code());
+      }
       check_asset_is_valid(value);
       check(!_this->get_opt(opt::is_frozen), "token is frozen");
 
       //TODO: check game account
       check(value.quantity.symbol == _this->supply.symbol, "symbol precision mismatch");
 
-      _tbl.modify(_this, same_payer, [&](auto& s) {
+      modify(same_payer, [&](auto& s) {
          s.supply -= value.quantity;
          s.set_max_supply(s.get_max_supply() - value.quantity);
       });

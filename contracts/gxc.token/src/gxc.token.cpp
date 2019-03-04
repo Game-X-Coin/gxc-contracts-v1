@@ -19,8 +19,8 @@ namespace gxc {
       check(false, "external tokens are not supported yet");
    }
 
-   void token_contract::create(extended_asset max_supply, std::vector<key_value> opts) {
-      token(_self, max_supply).create(max_supply, opts);
+   void token_contract::mint(extended_asset value, std::vector<key_value> opts) {
+      token(_self, value).mint(value, opts);
    }
 
    void token_contract::setopts(name issuer, symbol symbol, std::vector<key_value> opts) {
@@ -86,4 +86,4 @@ namespace gxc {
    }
 }
 
-EOSIO_DISPATCH(gxc::token_contract, (create)(transfer)(burn)(setopts)(setacntopts)(open)(close)(deposit)(reqwithdraw)(withdraw)(clearreqs)(approve))
+EOSIO_DISPATCH(gxc::token_contract, (mint)(transfer)(burn)(setopts)(setacntopts)(open)(close)(deposit)(reqwithdraw)(withdraw)(clearreqs)(approve))
