@@ -57,6 +57,9 @@ namespace gxc {
       [[eosio::action]]
       void clearreqs(name owner);
 
+      [[eosio::action]]
+      void approve(name owner, name spender, extended_asset value);
+
       static uint64_t get_id(const extended_asset& value, uint64_t seed) {
          auto sym_code = extended_symbol_code(value.quantity.symbol, value.contract);
          return fasthash64(reinterpret_cast<const void*>(&sym_code), sizeof(uint128_t), seed);
@@ -156,15 +159,40 @@ namespace gxc {
                  indexed_by<"schedtime"_n, const_mem_fun<withdrawal_request, uint64_t, &withdrawal_request::by_scheduled_time>>
               > withdraws;
 
+      struct [[eosio::table("allowance"), eosio::contract("gxc.token")]] allowance {
+         name  spender;  //  8
+         asset quantity; // 24
+         name  issuer;   // 32
+
+         static constexpr uint64_t seed = name("allowance").value;
+         static uint64_t get_id(name spender, extended_asset value) {
+            std::array<char,24> raw;
+            auto sym_code = extended_symbol_code(value.quantity.symbol, value.contract).raw();
+            datastream<char*> ds(raw.data(), raw.size());
+            ds << spender;
+            ds << sym_code;
+            return fasthash64(reinterpret_cast<const void*>(raw.data()), raw.size(), seed);
+         }
+
+         uint64_t primary_key()const { return get_id(spender, extended_asset(quantity, issuer)); }
+
+         EOSLIB_SERIALIZE( allowance, (spender)(quantity)(issuer) )
+      };
+
+      typedef multi_index<"allowance"_n, allowance> allowed;
+
    private:
-      static void check_asset_is_valid(asset quantity) {
+      static void check_asset_is_valid(asset quantity, bool zeroable = false) {
          check(quantity.symbol.is_valid(), "invalid symbol name");
          check(quantity.is_valid(), "invalid quantity");
-         check(quantity.amount > 0, "must be positive quantity");
+         if (zeroable)
+            check(quantity.amount >= 0, "must not be negative quantity");
+         else
+            check(quantity.amount > 0, "must be positive quantity");
       }
 
-      static void check_asset_is_valid(extended_asset value) {
-         check_asset_is_valid(value.quantity);
+      static void check_asset_is_valid(extended_asset value, bool zeroable = false) {
+         check_asset_is_valid(value.quantity, zeroable);
       }
 
       class token;
@@ -224,19 +252,32 @@ namespace gxc {
          void setopts(const std::vector<key_value>& opts);
          void open();
          void close();
+         void approve(name spender, extended_asset value);
 
          inline name owner()const  { return scope(); }
          inline name issuer()const { return _st->scope(); }
 
          inline const token& get_token()const { return *_st; }
 
+         account& keep() {
+            keep_balance = true;
+            return *this;
+         }
+
+         account& unkeep() {
+            keep_balance = false;
+            return *this;
+         }
+
       private:
          const token* _st;
+         bool  keep_balance;
 
-         void sub_balance(extended_asset value, bool keep_balance = false);
+         void sub_balance(extended_asset value);
          void add_balance(extended_asset value);
-         void sub_deposit(extended_asset value, bool keep_balance = false);
+         void sub_deposit(extended_asset value);
          void add_deposit(extended_asset value);
+         void sub_allowance(name spender, extended_asset value);
 
          friend class token;
          friend class requests;

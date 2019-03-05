@@ -80,6 +80,10 @@ namespace gxc {
    void token_contract::clearreqs(name owner) {
       requests(_self, owner).clear();
    }
+
+   void token_contract::approve(name owner, name spender, extended_asset value) {
+      token(_self, value).get_account(owner).approve(spender, value);
+   }
 }
 
-EOSIO_DISPATCH(gxc::token_contract, (create)(transfer)(burn)(setopts)(setacntopts)(open)(close)(deposit)(reqwithdraw)(withdraw)(clearreqs))
+EOSIO_DISPATCH(gxc::token_contract, (create)(transfer)(burn)(setopts)(setacntopts)(open)(close)(deposit)(reqwithdraw)(withdraw)(clearreqs)(approve))

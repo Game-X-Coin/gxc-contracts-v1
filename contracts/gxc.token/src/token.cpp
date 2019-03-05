@@ -144,14 +144,24 @@ namespace gxc {
       check(!_this->get_opt(opt::is_frozen), "token is frozen");
 
       bool is_recall = false;
+      bool is_allowed = false;
 
       if (!has_auth(from)) {
-         check(_this->get_opt(opt::can_recall) && has_vauth(value.contract), "Missing required authority");
-         is_recall = true;
+         if (_this->get_opt(opt::can_recall) && has_vauth(value.contract)) {
+            is_recall = true;
+         } else if (has_auth(to)) {
+            allowed _allowed(code(), from.value);
+            auto it = _allowed.find(allowance::get_id(to, value));
+            is_allowed = (it != _allowed.end());
+         }
+         check(is_recall || is_allowed, "Missing required authority");
       }
 
       // subtract asset from `from`
       auto _from = get_account(from);
+
+      if (is_allowed)
+         _from.sub_allowance(to, value);
 
       if (!is_recall)
          _from.sub_balance(value);
@@ -230,7 +240,7 @@ namespace gxc {
          });
       }
 
-      get_account(owner).sub_deposit(value, true);
+      get_account(owner).keep().sub_deposit(value);
       get_account(code()).add_balance(value);
 
       _req.refresh_schedule(ctp + seconds(_this->withdraw_delay_sec));

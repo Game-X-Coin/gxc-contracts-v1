@@ -29,7 +29,7 @@ namespace gxc {
       });
    }
 
-   void token_contract::account::sub_balance(extended_asset value, bool keep_balance) {
+   void token_contract::account::sub_balance(extended_asset value) {
       check_account_is_valid();
       check(_this->balance.amount >= value.quantity.amount, "overdrawn balance");
 
@@ -61,7 +61,7 @@ namespace gxc {
       }
    }
 
-   void token_contract::account::sub_deposit(extended_asset value, bool keep_balance) {
+   void token_contract::account::sub_deposit(extended_asset value) {
       check_account_is_valid();
       check(_this->get_deposit().amount >= value.quantity.amount, "overdrawn deposit");
 
@@ -108,5 +108,45 @@ namespace gxc {
       check(exists(), "account balance doesn't exist");
       check(!_this->balance.amount && !_this->get_deposit().amount, "cannot close non-zero balance");
       _tbl.erase(_this);
+   }
+
+   void token_contract::account::approve(name spender, extended_asset value) {
+      check_asset_is_valid(value, true);
+      require_auth(owner());
+
+      allowed _allowed(code(), owner().value);
+
+      auto it = _allowed.find(allowance::get_id(spender, value));
+      if (it == _allowed.end()) {
+         // no existing allowance, but try approving `0` amount (erase allowance)
+         check(value.quantity.amount > 0, "allowance not found");
+
+         _allowed.emplace(owner(), [&](auto& a) {
+            a.spender  = spender;
+            a.quantity = value.quantity;
+            a.issuer   = value.contract;
+         });
+      } else if (value.quantity.amount > 0) {
+         _allowed.modify(it, owner(), [&](auto& a) {
+            a.quantity = value.quantity;
+         });
+      } else {
+         _allowed.erase(it);
+      }
+   }
+
+   void token_contract::account::sub_allowance(name spender, extended_asset value) {
+      allowed _allowed(code(), owner().value);
+
+      const auto& it = _allowed.get(allowance::get_id(spender, value));
+
+      if (it.quantity > value.quantity)
+         _allowed.modify(it, owner(), [&](auto& a) {
+            a.quantity -= value.quantity;
+         });
+      else if (it.quantity == value.quantity)
+         _allowed.erase(it);
+      else
+         check(false, "try transfering more than allowed");
    }
 }
