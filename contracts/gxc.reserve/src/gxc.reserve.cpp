@@ -37,7 +37,7 @@ void reserve::mint(extended_asset derivative, extended_asset underlying, std::ve
    });
 
    // TODO: check allowance
-   // deposit base asset to escrow
+   // deposit underlying asset to reserve
    action(permission_level(_self, system::active_permission),
       token_account, "transfer"_n, std::make_tuple(derivative.contract, _self, underlying, string("deposit in reserve"))
    ).send();

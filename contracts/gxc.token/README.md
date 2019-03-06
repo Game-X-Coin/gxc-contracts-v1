@@ -130,7 +130,7 @@ Deposit token to be withdrawable by issuer (for in-game use)
 
 ## withdraw (owner, quantity)
 
-Withdraw token (for trading or escrow claim), need to wait for a specified duration
+Withdraw token (for trading or claiming reserve), need to wait for a specified duration
 
 **Required Authorization:** `owner`
 

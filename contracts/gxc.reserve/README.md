@@ -1,6 +1,6 @@
-# gxc.escrow
+# gxc.reserve
 
-Creates token based on escrow deposit. Users can claim with their earning game tokens.
+Creates token based on reserved deposit. Users can claim with their earning game tokens.
 
 ## deposit (issuer, derv, base)
 
