@@ -5,28 +5,32 @@
 #pragma once
 
 #include <eosiolib/eosio.hpp>
-#include <gxclib/game.hpp>
 
 using namespace eosio;
 
-namespace gxc { namespace game {
+namespace gxc {
 
-class [[eosio::contract("gxc.game")]] contract : public eosio::contract {
+class [[eosio::contract("gxc.game")]] game_contract : public contract {
 public:
    using eosio::contract::contract;
 
-   [[eosio::action]] void setgame (name account_name, bool is_game);
+   [[eosio::action]]
+   void setgame(name name, bool activated);
+
+   [[eosio::action]]
+   void seturi(name name, std::string uri);
 
 private:
-   struct [[eosio::table, eosio::contract("gxc.game")]] gamerow {
-      name account_name;
+   struct [[eosio::table, eosio::contract("gxc.game")]] game {
+      name        name;
+      std::string uri;
 
-      uint64_t primary_key()const { return account_name.value; }
+      uint64_t primary_key()const { return name.value; }
 
-      EOSLIB_SERIALIZE(gamerow, (account_name))
+      EOSLIB_SERIALIZE(game, (name)(uri))
    };
 
-   typedef multi_index<"game"_n, gamerow> gametable;
+   typedef multi_index<"game"_n, game> games;
 };
 
-} }
+}

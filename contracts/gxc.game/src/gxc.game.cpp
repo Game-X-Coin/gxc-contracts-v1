@@ -4,25 +4,37 @@
  */
 #include <gxc.game/gxc.game.hpp>
 
-namespace gxc { namespace game {
+namespace gxc {
 
-void contract::setgame(name account_name, bool is_game) {
-   require_auth(game::account);
+void game_contract::setgame(name name, bool activated) {
+   require_auth(_self);
 
-   gametable gt(_self, _self.value);
-   auto itr = gt.find(account_name.value);
+   games gms(_self, _self.value);
+   auto it = gms.find(name.value);
 
-   if (is_game) {
-      eosio_assert(itr == gt.end(), "already registered game");
-      gt.emplace(_self, [&](auto& gm) {
-         gm.account_name = account_name;
+   if (activated) {
+      check(it == gms.end(), "already registered game");
+      gms.emplace(_self, [&](auto& g) {
+         g.name = name;
       });
    } else {
-      eosio_assert(itr != gt.end(), "not registered game");
-      gt.erase(itr);
+      check(it != gms.end(), "not registered game");
+      gms.erase(it);
    }
 }
 
-} }
+void game_contract::seturi(name name, std::string uri) {
+   require_auth(name);
 
-EOSIO_DISPATCH(gxc::game::contract, (setgame))
+   games gms(_self, _self.value);
+   auto it = gms.find(name.value);
+
+   check(it != gms.end(), "game account is not found");
+   gms.modify(it, same_payer, [&](auto& g) {
+      g.uri = uri;
+   });
+}
+
+}
+
+EOSIO_DISPATCH(gxc::game_contract, (setgame)(seturi))

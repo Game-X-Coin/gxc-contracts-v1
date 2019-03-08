@@ -7,15 +7,15 @@
 #include <eosiolib/name.hpp>
 #include <eosiolib/db.h>
 
-namespace gxc { namespace game {
+namespace gxc {
 
 using eosio::name;
 
-constexpr name account = "gxc.game"_n;
+constexpr name game_account = "gxc.game"_n;
 
-inline bool is_game(name account_name) {
-   auto itr = db_find_i64(account.value, account.value, "game"_n.value, account_name.value);
-   return itr != db_end_i64(account.value, account.value, "game"_n.value);
+inline bool check_is_game(name name) {
+   auto it = db_find_i64(game_account.value, game_account.value, "game"_n.value, name.value);
+   return it != db_end_i64(game_account.value, game_account.value, "game"_n.value);
 }
 
-} }
+}
