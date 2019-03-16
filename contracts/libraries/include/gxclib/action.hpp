@@ -7,7 +7,7 @@
 
 namespace eosio {
 
-name rootname(const name& n) {
+name rootname(name n) {
    auto mask = (uint64_t) -1;
    for (auto i = 0; i < 12; ++i) {
       if (n.value & (0x1FULL << (4 + 5 * (11 - i))))
@@ -18,12 +18,19 @@ name rootname(const name& n) {
    return name(n.value & mask);
 }
 
-inline bool has_vauth(const name& n) {
-   return ::has_auth(rootname(n).value);
+name basename(name n) {
+   if (::is_account(n.value))
+      return n;
+   else
+      return rootname(n);
 }
 
-inline void require_vauth(const name& n) {
-   ::require_auth(rootname(n).value);
+inline bool has_vauth(name n) {
+   return ::has_auth(basename(n).value);
+}
+
+inline void require_vauth(name n) {
+   ::require_auth(basename(n).value);
 }
 
 }

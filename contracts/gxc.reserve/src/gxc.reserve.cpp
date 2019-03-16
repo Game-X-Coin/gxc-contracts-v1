@@ -39,7 +39,7 @@ void reserve::mint(extended_asset derivative, extended_asset underlying, std::ve
    // TODO: check allowance
    // deposit underlying asset to reserve
    action(permission_level(_self, system::active_permission),
-      token_account, "transfer"_n, std::make_tuple(rootname(derivative.contract), _self, underlying, string("deposit in reserve"))
+      token_account, "transfer"_n, std::make_tuple(basename(derivative.contract), _self, underlying, string("deposit in reserve"))
    ).send();
 
    // create derivative token
@@ -73,7 +73,7 @@ void reserve::claim(name owner, extended_asset value) {
    ).send();
 
    action(
-      {_self, active_permission}, token_account, "transfer"_n, std::make_tuple(_self, value.contract, value, string("claim reserve"))
+      {_self, active_permission}, token_account, "transfer"_n, std::make_tuple(_self, basename(value.contract), value, string("claim reserve"))
    ).send();
 
    action(
