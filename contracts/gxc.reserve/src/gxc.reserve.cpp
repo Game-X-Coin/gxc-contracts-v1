@@ -10,7 +10,7 @@ using system::active_permission;
 
 void reserve::mint(extended_asset derivative, extended_asset underlying, std::vector<key_value> opts) {
    require_vauth(derivative.contract);
-   check_is_game(rootname(derivative.contract));
+   check_is_game(derivative.contract);
 
    std::vector<std::string> valid_opts = {
       "withdraw_min_amount",
