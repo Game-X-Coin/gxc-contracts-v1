@@ -21,7 +21,7 @@ void reserve::mint(extended_asset derivative, extended_asset underlying, std::ve
    };
 
    for (auto o : opts) {
-      check(option_is_valid(o.key), "not allowed to set option `" + o.key + "`"); 
+      check(option_is_valid(o.first), "not allowed to set option `" + o.first + "`"); 
    }
 
    check(underlying.contract == name("gxc"), "underlying asset should be system token");

@@ -12,18 +12,18 @@ namespace gxc {
 
       modify(same_payer, [&](auto& a) {
          for (auto o : opts) {
-            if (o.key == "frozen") {
+            if (o.first == "frozen") {
                check((*_st)->get_opt(token::opt::can_freeze), "not configured to freeze account");
-               auto value = unpack<bool>(o.value);
+               auto value = unpack<bool>(o.second);
                check(a.get_opt(opt::frozen) != value, "option already has give value");
                a.set_opt(opt::frozen, value);
-            } else if (o.key == "whitelist") {
+            } else if (o.first == "whitelist") {
                check((*_st)->get_opt(token::opt::can_whitelist), "not configured to whitelist account");
-               auto value = unpack<bool>(o.value);
+               auto value = unpack<bool>(o.second);
                check(a.get_opt(opt::whitelist) != value, "option already has give value");
                a.set_opt(opt::whitelist, value);
             } else {
-               check(false, "unknown option `" + o.key + "`");
+               check(false, "unknown option `" + o.first + "`");
             }
          }
       });

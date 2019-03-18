@@ -36,30 +36,30 @@ namespace gxc {
    void token_contract::token::_setopts(const std::vector<key_value>& opts, bool init) {
       modify(same_payer, [&](auto& t) {
          for (auto o : opts) {
-            if (o.key == "can_recall") {
-               check(init, "not allowed to change the option `" + o.key + "`");
-               t.set_opt(opt::can_recall, unpack<bool>(o.value));
-            } else if (o.key == "can_freeze") {
-               check(init, "not allowed to change the option `" + o.key + "`");
-               t.set_opt(opt::can_freeze, unpack<bool>(o.value));
-            } else if (o.key == "can_whitelist") {
-               check(init, "not allowed to change the option `" + o.key + "`");
-               t.set_opt(opt::can_whitelist, unpack<bool>(o.value));
-            } else if (o.key == "is_frozen") {
-               t.set_opt(opt::is_frozen, unpack<bool>(o.value));
-            } else if (o.key == "enforce_whitelist") {
-               t.set_opt(opt::enforce_whitelist, unpack<bool>(o.value));
-            } else if (o.key == "withdraw_min_amount") {
-               check(init, "not allowed to change the option `" + o.key + "`");
-               auto value = unpack<int64_t>(o.value);
+            if (o.first == "can_recall") {
+               check(init, "not allowed to change the option `" + o.first + "`");
+               t.set_opt(opt::can_recall, unpack<bool>(o.second));
+            } else if (o.first == "can_freeze") {
+               check(init, "not allowed to change the option `" + o.first + "`");
+               t.set_opt(opt::can_freeze, unpack<bool>(o.second));
+            } else if (o.first == "can_whitelist") {
+               check(init, "not allowed to change the option `" + o.first + "`");
+               t.set_opt(opt::can_whitelist, unpack<bool>(o.second));
+            } else if (o.first == "is_frozen") {
+               t.set_opt(opt::is_frozen, unpack<bool>(o.second));
+            } else if (o.first == "enforce_whitelist") {
+               t.set_opt(opt::enforce_whitelist, unpack<bool>(o.second));
+            } else if (o.first == "withdraw_min_amount") {
+               check(init, "not allowed to change the option `" + o.first + "`");
+               auto value = unpack<int64_t>(o.second);
                check(value >= 0, "withdraw_min_amount should be positive");
                t.set_withdraw_min_amount(asset(value, t.supply.symbol));
-            } else if (o.key == "withdraw_delay_sec") {
-               check(init, "not allowed to change the option `" + o.key + "`");
-               auto value = unpack<uint64_t>(o.value);
+            } else if (o.first == "withdraw_delay_sec") {
+               check(init, "not allowed to change the option `" + o.first + "`");
+               auto value = unpack<uint64_t>(o.second);
                t.withdraw_delay_sec = static_cast<uint32_t>(value);
             } else {
-               check(false, "unknown option `" + o.key + "`");
+               check(false, "unknown option `" + o.first + "`");
             }
          }
       });

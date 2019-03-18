@@ -11,7 +11,6 @@
 #include <gxclib/game.hpp>
 #include <gxclib/token.hpp>
 #include <gxclib/action.hpp>
-#include <gxclib/key_value.hpp>
 
 using namespace eosio;
 using gxc::get_float_amount;
@@ -22,6 +21,7 @@ namespace gxc {
 class [[eosio::contract("gxc.reserve")]] reserve : public eosio::contract {
 public:
    using contract::contract;
+   using key_value = std::pair<std::string, std::vector<int8_t>>;
 
    [[eosio::action]]
    void mint(extended_asset derivative, extended_asset underlying, std::vector<key_value> opts);

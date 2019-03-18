@@ -9,7 +9,6 @@
 #include <eosiolib/time.hpp>
 
 #include <gxclib/symbol.hpp>
-#include <gxclib/key_value.hpp>
 #include <gxclib/multi_index.hpp>
 #include <gxclib/fasthash.h>
 #include <gxclib/action.hpp>
@@ -21,6 +20,7 @@ namespace gxc {
    class [[eosio::contract("gxc.token")]] token_contract : public contract {
    public:
       using contract::contract;
+      using key_value = std::pair<std::string, std::vector<int8_t>>;
 
       void regtoken(name issuer, symbol symbol, name contract);
 
