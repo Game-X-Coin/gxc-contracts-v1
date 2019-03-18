@@ -22,7 +22,7 @@ namespace gxc {
       using contract::contract;
       using key_value = std::pair<std::string, std::vector<int8_t>>;
 
-      void regtoken(name issuer, symbol symbol, name contract);
+      void regtoken(name issuer, symbol_code symbol, name contract);
 
       [[eosio::action]]
       void mint(extended_asset value, std::vector<key_value> opts);
@@ -34,16 +34,16 @@ namespace gxc {
       void burn(extended_asset value, std::string memo);
 
       [[eosio::action]]
-      void setopts(name issuer, symbol symbol, std::vector<key_value> opts);
+      void setopts(name issuer, symbol_code symbol, std::vector<key_value> opts);
 
       [[eosio::action]]
-      void setacntopts(name account, name issuer, symbol symbol, std::vector<key_value> opts);
+      void setacntopts(name account, name issuer, symbol_code symbol, std::vector<key_value> opts);
 
       [[eosio::action]]
-      void open(name owner, name issuer, symbol symbol, std::vector<key_value> opts);
+      void open(name owner, name issuer, symbol_code symbol, std::vector<key_value> opts);
 
       [[eosio::action]]
-      void close(name owner, name issuer, symbol symbol);
+      void close(name owner, name issuer, symbol_code symbol);
 
       [[eosio::action]]
       void deposit(name owner, extended_asset value);
@@ -204,8 +204,12 @@ namespace gxc {
       public:
          using opt = currency_stats::opt;
 
+         token(name receiver, name code, symbol_code symbol)
+         : multi_index_item(receiver, code, symbol.raw())
+         {}
+
          token(name receiver, name code, symbol symbol)
-         : multi_index_item(receiver, code, symbol.code().raw())
+         : token(receiver, code, symbol.code())
          {}
 
          token(name receiver, extended_asset value)
@@ -220,10 +224,6 @@ namespace gxc {
          void transfer(name from, name to, extended_asset quantity);
          void deposit(name owner, extended_asset value);
          void withdraw(name owner, extended_asset value);
-
-         void check_symbol_is_valid(symbol symbol) {
-            check(_this->supply.symbol == symbol, "symbol precision mismatch" );
-         }
 
          account get_account(name owner)const {
             check(exists(), "token not found");

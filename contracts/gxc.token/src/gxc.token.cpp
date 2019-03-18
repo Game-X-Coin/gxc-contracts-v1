@@ -14,7 +14,7 @@ namespace gxc {
    constexpr name system_account {"gxc"_n};
    constexpr name null_account   {"gxc.null"_n};
 
-   void token_contract::regtoken(name issuer, symbol symbol, name contract) {
+   void token_contract::regtoken(name issuer, symbol_code symbol, name contract) {
       require_auth(_self);
       check(false, "external tokens are not supported yet");
    }
@@ -23,11 +23,11 @@ namespace gxc {
       token(_self, value).mint(value, opts);
    }
 
-   void token_contract::setopts(name issuer, symbol symbol, std::vector<key_value> opts) {
+   void token_contract::setopts(name issuer, symbol_code symbol, std::vector<key_value> opts) {
       token(_self, issuer, symbol).setopts(opts);
    }
 
-   void token_contract::setacntopts(name account, name issuer, symbol symbol, std::vector<key_value> opts) {
+   void token_contract::setacntopts(name account, name issuer, symbol_code symbol, std::vector<key_value> opts) {
       token(_self, issuer, symbol).get_account(account).setopts(opts);
    }
 
@@ -52,16 +52,15 @@ namespace gxc {
       token(_self, value).burn(value);
    }
 
-   void token_contract::open(name owner, name issuer, symbol symbol, std::vector<key_value> opts) {
+   void token_contract::open(name owner, name issuer, symbol_code symbol, std::vector<key_value> opts) {
       auto _token = token(_self, issuer, symbol);
-      _token.check_symbol_is_valid(symbol);
 
       auto _account = _token.get_account(owner);
       _account.open();
       _account.setopts(opts);
    }
 
-   void token_contract::close(name owner, name issuer, symbol symbol) {
+   void token_contract::close(name owner, name issuer, symbol_code symbol) {
       token(_self, issuer, symbol).get_account(owner).close();
    }
 
