@@ -1,0 +1,3 @@
+[submodule "contracts/libraries/eosio-xt"]
+	path = contracts/libraries/eosio-xt
+	url = https://github.com/conr2d/eosio-xt

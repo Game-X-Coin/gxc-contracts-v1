@@ -8,9 +8,8 @@
 #include <eosiolib/asset.hpp>
 #include <eosiolib/time.hpp>
 
+#include <eosio-xt/eosio-xt.hpp>
 #include <gxclib/symbol.hpp>
-#include <gxclib/multi_index.hpp>
-#include <gxclib/fasthash.h>
 #include <gxclib/action.hpp>
 
 using namespace eosio;
@@ -62,7 +61,7 @@ namespace gxc {
 
       static uint64_t get_id(const extended_asset& value, uint64_t seed) {
          auto sym_code = extended_symbol_code(value.quantity.symbol, value.contract);
-         return fasthash64(reinterpret_cast<const void*>(&sym_code), sizeof(uint128_t), seed);
+         return fasthash64(reinterpret_cast<const char*>(&sym_code), sizeof(uint128_t), seed);
       }
 
       struct [[eosio::table("accounts"), eosio::contract("gxc.token")]] account_balance {
@@ -172,7 +171,7 @@ namespace gxc {
             datastream<char*> ds(raw.data(), raw.size());
             ds << spender;
             ds << sym_code;
-            return fasthash64(reinterpret_cast<const void*>(raw.data()), raw.size(), seed);
+            return fasthash64(reinterpret_cast<const char*>(raw.data()), raw.size(), seed);
          }
 
          uint64_t primary_key()const { return get_id(spender, extended_asset(quantity, issuer)); }
@@ -200,12 +199,12 @@ namespace gxc {
       class account;
       class requests;
 
-      class token : public multi_index_item<stat> {
+      class token : public multi_index_wrapper<stat> {
       public:
          using opt = currency_stats::opt;
 
          token(name receiver, name code, symbol_code symbol)
-         : multi_index_item(receiver, code, symbol.raw())
+         : multi_index_wrapper(receiver, code, symbol.raw())
          {}
 
          token(name receiver, name code, symbol symbol)
@@ -237,12 +236,12 @@ namespace gxc {
          void _setopts(const std::vector<key_value>& opts, bool init = false);
       };
 
-      class account : public multi_index_item<accounts> {
+      class account : public multi_index_wrapper<accounts> {
       public:
          using opt = account_balance::opt;
 
          account(name receiver, name code, uint64_t key, const token* st)
-         : multi_index_item(receiver, code, key)
+         : multi_index_wrapper(receiver, code, key)
          , _st(st)
          {}
 
@@ -291,12 +290,12 @@ namespace gxc {
          return time_point(microseconds(static_cast<int64_t>(current_time())));
       }
 
-      class requests : public multi_index_item<withdraws> {
+      class requests : public multi_index_wrapper<withdraws> {
       public:
-         using multi_index_item::multi_index_item;
+         using multi_index_wrapper::multi_index_wrapper;
 
          requests(name receiver, name code, extended_asset value)
-         : multi_index_item(receiver, code, withdrawal_request::get_id(value))
+         : multi_index_wrapper(receiver, code, withdrawal_request::get_id(value))
          {}
 
          void refresh_schedule(time_point_sec base_time = current_time_point());
