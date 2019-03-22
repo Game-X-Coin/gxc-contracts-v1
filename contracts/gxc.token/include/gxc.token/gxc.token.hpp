@@ -94,8 +94,6 @@ namespace gxc {
             else     _issuer.value &= ~(0x1 << option);
          }
 
-         static uint64_t get_id(extended_asset value) { return token_contract::get_id(value); }
-
          uint64_t primary_key()const { return get_id(extended_asset(balance, get_issuer())); }
          uint64_t by_issuer()const   { return _issuer.value & 0xFFFFFFFFFFFFFFF0ULL; }
 
@@ -153,8 +151,6 @@ namespace gxc {
          asset          quantity;
          name           issuer;
          time_point_sec scheduled_time;
-
-         static uint64_t get_id(extended_asset value) { return token_contract::get_id(value); }
 
          uint64_t primary_key()const       { return get_id(extended_asset(quantity, issuer)); }
          uint64_t by_scheduled_time()const { return static_cast<uint64_t>(scheduled_time.utc_seconds); }
@@ -233,7 +229,7 @@ namespace gxc {
 
          account get_account(name owner)const {
             check(exists(), "token not found");
-            auto _account = account(code(), owner, account_balance::get_id(extended_asset(asset(0, _this->supply.symbol), _this->issuer)), this);
+            auto _account = account(code(), owner, get_id(extended_asset(asset(0, _this->supply.symbol), _this->issuer)), this);
             return _account;
          }
 
@@ -302,7 +298,7 @@ namespace gxc {
          using multi_index_wrapper::multi_index_wrapper;
 
          requests(name receiver, name code, extended_asset value)
-         : multi_index_wrapper(receiver, code, withdrawal_request::get_id(value))
+         : multi_index_wrapper(receiver, code, get_id(value))
          {}
 
          void refresh_schedule(time_point_sec base_time = current_time_point());
