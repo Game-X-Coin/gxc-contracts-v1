@@ -11,17 +11,26 @@
 using namespace eosio;
 using std::string;
 
-namespace gxc { namespace user {
+namespace gxc {
 
-class [[eosio::contract("gxc.user")]] contract : public eosio::contract {
+class [[eosio::contract("gxc.user")]] user_contract : public contract {
 public:
-   using eosio::contract::contract;
+   using contract::contract;
 
-   [[eosio::action]] void connect (name account_name, name game_name, string login_token);
-   [[eosio::action]] void login (name account_name, name game_name, string login_token);
-   [[eosio::action]] void setnick (name account_name, string nickname);
-   [[eosio::action]] void rmvnick (name account_name);
-   [[eosio::action]] void payram4nick (name account_name);
+   [[eosio::action]]
+   void connect(name account_name, name game_name, string login_token);
+
+   [[eosio::action]]
+   void login(name account_name, name game_name, string login_token);
+
+   [[eosio::action]]
+   void setnick(name account_name, string nickname);
+
+   [[eosio::action]]
+   void rmvnick(name account_name);
+
+   [[eosio::action]]
+   void payram4nick(name account_name);
 
    void authenticate(name account_name, name game_name, const string& login_token);
 
@@ -44,14 +53,8 @@ public:
       if (nickname.empty()) return false;
 
       auto it = nickname.begin();
-      auto len = 0;
-
-      for (auto cp = utf8::unchecked::next(it) ; cp; cp = utf8::unchecked::next(it)) {
+      for (auto cp = utf8::unchecked::next(it) ; cp; cp = utf8::unchecked::next(it))
          if (!is_valid_char(cp)) return false;
-         len += 1 + !!(cp & 0xff00);
-      }
-
-      eosio_assert((len >= 6) && (len <= 16), "nickname has invalid length");
 
       return true;
    }
@@ -66,4 +69,4 @@ private:
    }
 };
 
-} }
+}
