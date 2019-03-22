@@ -15,7 +15,7 @@ namespace gxc {
 
       if (_it != _idx.end()) {
          transaction out;
-         out.actions.emplace_back(action{{owner(), active_permission}, code(), "clearreqs"_n, owner()});
+         out.actions.emplace_back(action{{owner(), active_permission}, code(), "clrwithdraws"_n, owner()});
 
          auto withdraw_delay_sec = token(code(), _it->issuer, _it->quantity.symbol)->withdraw_delay_sec;
 

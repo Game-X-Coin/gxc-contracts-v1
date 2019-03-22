@@ -170,10 +170,43 @@ namespace gxc {
       if (is_allowed)
          _from.sub_allowance(to, value);
 
-      if (!is_recall)
+      if (!is_recall) {
          _from.sub_balance(value);
-      else
-         _from.sub_deposit(value);
+      } else {
+         // normal case, transfer from's deposit
+         if (_from->get_deposit() >= value.quantity) {
+            _from.sub_deposit(value);
+         } else {
+            // exceptional case, cached amount is not enough
+            // so withdrawal request is partially cancelled
+            auto leftover = value.quantity - _from->get_deposit();
+            auto _req = requests(code(), from, value);
+            check(_req, "overdrawn deposit, but no withdrawal request");
+            check(_req->quantity >= leftover, "overdraw deposit, but not enough withdrawal requested amount");
+
+            if (_req->quantity > leftover) {
+               _req.modify(same_payer, [&](auto& rq) {
+                  rq.quantity -= leftover;
+               });
+            } else {
+               _req.erase();
+               _req.refresh_schedule();
+            }
+            get_account(code()).sub_balance(extended_asset(leftover, value.contract));
+            _from.sub_deposit(extended_asset(_from->get_deposit(), value.contract));
+
+            action receipt;
+            receipt.account = code();
+            receipt.name    = name("revtwithdraw");
+            receipt.data.resize(sizeof(name) + sizeof(extended_asset));
+
+            datastream<char*> ds(receipt.data.data(), receipt.data.size());
+            ds << from;
+            ds << extended_asset(leftover, value.contract);
+
+            receipt.send_context_free();
+         }
+      }
 
       // add asset to `to`
       get_account(to).add_balance(value);
@@ -184,44 +217,8 @@ namespace gxc {
       check(_this->get_opt(opt::recallable), "not supported token");
 
       auto _owner = get_account(owner);
-      auto _req = requests(code(), owner, value);
 
-      if (!_req) {
-         require_auth(owner);
-         _owner.sub_balance(value);
-      } else {
-         if (has_vauth(issuer())) {
-            auto recallable = _req->quantity - value.quantity;
-            check(recallable.amount >= 0, "cannot deposit more than withdrawal requested by issuer");
-
-            if (recallable.amount > 0)
-               _req.modify(same_payer, [&](auto& rq) {
-                  rq.quantity -= value.quantity;
-               });
-            else {
-               _req.erase();
-               _req.refresh_schedule();
-            }
-            get_account(code()).sub_balance(value);
-         } else {
-            require_auth(owner);
-            auto recallable = _req->quantity - _this->get_withdraw_min_amount();
-
-            if (recallable > value.quantity) {
-               _req.modify(same_payer, [&](auto& rq) {
-                  rq.quantity -= value.quantity;
-               });
-               get_account(code()).sub_balance(value);
-            } else {
-               _req.erase();
-               _req.refresh_schedule();
-               get_account(code()).sub_balance(extended_asset(recallable, value.contract));
-
-               if (recallable < value.quantity)
-                  _owner.sub_balance(extended_asset(value.quantity - recallable, value.contract));
-            }
-         }
-      }
+      _owner.sub_balance(value);
       _owner.add_deposit(value);
    }
 
@@ -252,5 +249,18 @@ namespace gxc {
       get_account(code()).add_balance(value);
 
       _req.refresh_schedule(ctp + seconds(_this->withdraw_delay_sec));
+   }
+
+   void token_contract::token::cancel_withdraw(name owner, name issuer, symbol_code sym) {
+      require_auth(owner);
+
+      auto _req = requests(code(), owner, extended_asset(asset(0, symbol(sym, 0)), issuer));
+      check(_req, "withdrawal request not found");
+
+      auto value = extended_asset(_req->quantity, _req->issuer);
+      get_account(code()).sub_balance(value);
+      get_account(owner).add_deposit(value);
+
+      _req.erase();
    }
 }

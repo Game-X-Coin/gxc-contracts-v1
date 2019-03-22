@@ -48,16 +48,20 @@ namespace gxc {
       void deposit(name owner, extended_asset value);
 
       [[eosio::action]]
-      void reqwithdraw(name owner, extended_asset value);
+      void pushwithdraw(name owner, extended_asset value);
 
       [[eosio::action]]
-      void withdraw(name owner, extended_asset value);
+      void popwithdraw(name owner, name issuer, symbol_code symbol);
 
       [[eosio::action]]
-      void clearreqs(name owner);
+      void clrwithdraws(name owner);
 
       [[eosio::action]]
       void approve(name owner, name spender, extended_asset value);
+
+      // dummy actions
+      void withdraw(name owner, extended_asset value) {}
+      void revtwithdraw(name owner, extended_asset value) {}
 
       static uint64_t get_id(const extended_asset& value) {
          auto sym_code = extended_symbol_code(value.quantity.symbol, value.contract);
@@ -149,7 +153,7 @@ namespace gxc {
 
          static uint64_t get_id(extended_asset value) { return token_contract::get_id(value); }
 
-         uint64_t primary_key()const       { return get_id(extended_asset(this->quantity, this->issuer)); }
+         uint64_t primary_key()const       { return get_id(extended_asset(quantity, issuer)); }
          uint64_t by_scheduled_time()const { return static_cast<uint64_t>(scheduled_time.utc_seconds); }
  
          EOSLIB_SERIALIZE( withdrawal_request, (quantity)(issuer)(scheduled_time) )
@@ -222,6 +226,7 @@ namespace gxc {
          void transfer(name from, name to, extended_asset quantity);
          void deposit(name owner, extended_asset value);
          void withdraw(name owner, extended_asset value);
+         void cancel_withdraw(name owner, name issuer, symbol_code symbol);
 
          account get_account(name owner)const {
             check(exists(), "token not found");
