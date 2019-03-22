@@ -60,7 +60,10 @@ namespace gxc {
       void approve(name owner, name spender, extended_asset value);
 
       // dummy actions
+      [[eosio::action]]
       void withdraw(name owner, extended_asset value) {}
+
+      [[eosio::action]]
       void revtwithdraw(name owner, extended_asset value) {}
 
       static uint64_t get_id(const extended_asset& value) {
