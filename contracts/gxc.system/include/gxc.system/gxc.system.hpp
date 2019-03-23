@@ -70,7 +70,7 @@ public:
    [[eosio::action]] void setramrate (uint16_t bytes_per_block);
    [[eosio::action]] void setparams (const gxc::blockchain_parameters& params);
    [[eosio::action]] void setpriv (name account, uint8_t is_priv);
-   [[eosio::action]] void updtrevision (uint8_t revision);
+   [[eosio::action]] void updtrevision (uint8_t revision) {}
    [[eosio::action]] void genaccount (name creator, name name, authority owner, authority active, std::string nickname);
 
    // native action handelrs
