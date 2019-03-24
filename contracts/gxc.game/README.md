@@ -2,7 +2,13 @@
 
 Handles actions related to game account.
 
-## setgame (account_name, is_game)
+## Actions
+
+### setgame
+
+``` c++
+void setgame(name name, bool activated);
+```
 
 Register account as game account.
 
@@ -10,6 +16,21 @@ Register account as game account.
 
 |Param|Type|Default|Description|
 |-----|----|-------|-----------|
-|account_name|name||the account name to be registered as game|
-|is_game|bool|| To register game (true), unregister (false)|
+|name|name||the account name to be registered as game|
+|activated|bool||whether given account is game|
+
+### seturi
+
+``` c++
+void seturi(name name, std::string uri);
+```
+
+Set uri which contains game information
+
+**Required Authorization:** `gxc.game`
+
+|Param|Type|Default|Description|
+|-----|----|-------|-----------|
+|name|name||the name of game account|
+|uri|string||the uri providing game information|
 
