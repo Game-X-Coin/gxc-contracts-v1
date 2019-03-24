@@ -2,27 +2,46 @@
 
 Creates token based on reserved deposit. Users can claim with their earning game tokens.
 
-## deposit (issuer, derv, base)
+## How to create game token
 
-Deposits system token (base asset) to create game token (derivative asset)
+Before starting the process of token creation, token issuer account should be set as game account.
+Game account can be set `setgame` by `gxc.game`.
 
-**Required Authorization:** `issuer`
+1. Transfer system token to be used as underlying asset to token issuer balance
+2. Approve the amount of system token to be transferred to `gxc.reserve`
+3. Create token by `mint` with the maximum supply of game token and underlying system token
+
+## Actions
+
+### mint
+
+``` c++
+void mint(extended_asset derivative, extended_asset underlying, std::vector<key_value> opts);
+```
+
+Create game token (derivative asset) based on system token (underlying asset)
+Issuer of derivative asset (`derivative.contract`) should be game account set by `gxc.game`.
+
+**Required Authorization:** `derivative.contract`
 
 |Param|Type|Default|Description|
 |-----|----|-------|-----------|
-|issuer|name||the name of issuer|
-|derv|asset||the maximum supply of derivative asset|
-|base|asset||the quantity of base asset (system token)|
+|dervative|extended_asset||the maximum supply of derivative asset|
+|underlying|extended_asset||the quantity of base asset (system token)|
+|opts|key_value[]||token options (withdraw_min_amount, withdraw_delay_sec)|
 
-## claim (account_name, quantity, issuer)
+### claim
 
-Claims system token with game token
+``` c++
+void claim(name owner, extended_asset value);
+```
 
-**Required Authorization:** `account_name`
+Claims system token by burning game token
+
+**Required Authorization:** `owner`
 
 |Param|Type|Default|Description|
 |-----|----|-------|-----------|
-|account_name|name||the name of account|
-|quantity|asset||the amount of game token|
-|issuer|name$||the name of issuer|
+|owner|name||the name of account|
+|value|extended_asset||the amount of game token|
 
