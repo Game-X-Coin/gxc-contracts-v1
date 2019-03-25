@@ -31,5 +31,8 @@
 *.out
 *.app
 
+# Temporary files
+*.swp
+
 build/*
 .DS_Store
