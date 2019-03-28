@@ -4,7 +4,7 @@
  */
 #pragma once
 
-#include <eosiolib/name.hpp>
+#include <eosio/name.hpp>
 #include <boost/utility/string_view.hpp>
 
 namespace gxc {

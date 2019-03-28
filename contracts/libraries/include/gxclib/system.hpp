@@ -4,8 +4,7 @@
  */
 #pragma once
 
-#include <eosiolib/name.hpp>
-#include <eosiolib/symbol.hpp>
+#include <eosio/symbol.hpp>
 
 namespace gxc { namespace system {
 

@@ -4,8 +4,10 @@
  */
 #pragma once
 
-#include <eosiolib/eosio.hpp>
-#include <gxclib/producer_schedule.hpp>
+#include <eosio/eosio.hpp>
+#include <eosio/producer_schedule.hpp>
+
+#include "types.hpp"
 
 namespace eosio { namespace chain {
 

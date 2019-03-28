@@ -4,7 +4,7 @@
  */
 #pragma once
 
-#include <eosiolib/symbol.hpp>
+#include <eosio/symbol.hpp>
 
 namespace eosio {
 

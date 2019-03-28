@@ -4,7 +4,7 @@
  */
 #pragma once
 
-#include <eosiolib/asset.hpp>
+#include <eosio/asset.hpp>
 
 namespace gxc { namespace system {
    using eosio::asset;

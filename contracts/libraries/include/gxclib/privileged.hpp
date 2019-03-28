@@ -1,7 +1,7 @@
 #pragma once
-#include <eosiolib/privileged.h>
-#include <eosiolib/serialize.hpp>
-#include <eosiolib/crypto.hpp>
+#include <eosio/privileged.hpp>
+#include <eosio/serialize.hpp>
+#include <eosio/crypto.hpp>
 
 namespace gxc {
    /**
@@ -105,7 +105,7 @@ namespace gxc {
       char buf[sizeof(gxc::blockchain_parameters)];
       eosio::datastream<char *> ds( buf, sizeof(buf) );
       ds << params;
-      set_blockchain_parameters_packed( buf, ds.tellp() );
+      eosio::internal_use_do_not_use::set_blockchain_parameters_packed( buf, ds.tellp() );
    }
 
    /**
@@ -115,49 +115,11 @@ namespace gxc {
     */
    void get_blockchain_parameters(gxc::blockchain_parameters& params) {
       char buf[sizeof(gxc::blockchain_parameters)];
-      size_t size = get_blockchain_parameters_packed( buf, sizeof(buf) );
-      eosio_assert( size <= sizeof(buf), "buffer is too small" );
+      size_t size = eosio::internal_use_do_not_use::get_blockchain_parameters_packed( buf, sizeof(buf) );
+      eosio::check( size <= sizeof(buf), "buffer is too small" );
       eosio::datastream<const char*> ds( buf, size_t(size) );
       ds >> params;
    }
 
    ///@} priviledgedcppapi
-}
-
-namespace eosio {
-   /**
-   *  @defgroup producertype Producer Type
-   *  @ingroup types
-   *  @brief Defines producer type
-   *
-   *  @{
-   */
-
-   /**
-    * Maps producer with its signing key, used for producer schedule
-    *
-    * @brief Maps producer with its signing key
-    */
-   struct producer_key {
-
-      /**
-       * Name of the producer
-       *
-       * @brief Name of the producer
-       */
-      name             producer_name;
-
-      /**
-       * Block signing key used by this producer
-       *
-       * @brief Block signing key used by this producer
-       */
-      public_key       block_signing_key;
-
-      friend constexpr bool operator < ( const producer_key& a, const producer_key& b ) {
-         return a.producer_name < b.producer_name;
-      }
-
-      EOSLIB_SERIALIZE( producer_key, (producer_name)(block_signing_key) )
-   };
 }
