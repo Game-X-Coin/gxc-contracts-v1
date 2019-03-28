@@ -4,8 +4,7 @@
  */
 #pragma once
 
-#include <eosiolib/eosio.hpp>
-#include <eosiolib/asset.hpp>
+#include <eosio/eosio.hpp>
 
 #include <gxclib/system.hpp>
 #include <gxclib/game.hpp>
