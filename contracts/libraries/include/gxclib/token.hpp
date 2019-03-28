@@ -15,6 +15,7 @@
 namespace gxc {
 
 using namespace eosio;
+using namespace internal_use_do_not_use;
 
 constexpr name token_account = "gxc.token"_n;
 
@@ -24,7 +25,7 @@ inline double get_float_amount(asset quantity) {
 
 asset get_supply(name issuer, symbol_code sym_code) {
    asset supply;
-   eosio::internal_use_do_not_use::db_get_i64(eosio::internal_use_do_not_use::db_find_i64(token_account.value, issuer.value, "stat"_n.value, sym_code.raw()),
+   db_get_i64(db_find_i64(token_account.value, issuer.value, "stat"_n.value, sym_code.raw()),
               reinterpret_cast<void*>(&supply), sizeof(asset));
    return supply;
 }
@@ -32,9 +33,9 @@ asset get_supply(name issuer, symbol_code sym_code) {
 asset get_balance(name owner, name issuer, symbol_code sym_code) {
    asset balance;
    auto esc = extended_symbol_code(sym_code, issuer);
-   eosio::internal_use_do_not_use::db_get_i64(eosio::internal_use_do_not_use::db_find_i64(token_account.value, issuer.value, "accounts"_n.value,
-                                                                                          xxh3_64(reinterpret_cast<const char*>(&esc), sizeof(uint128_t))),
-                                             reinterpret_cast<void*>(&balance), sizeof(asset));
+   db_get_i64(db_find_i64(token_account.value, issuer.value, "accounts"_n.value,
+                          xxh3_64(reinterpret_cast<const char*>(&esc), sizeof(uint128_t))),
+             reinterpret_cast<void*>(&balance), sizeof(asset));
    return balance;
 }
 

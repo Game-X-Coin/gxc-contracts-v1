@@ -130,7 +130,7 @@ private:
 
    static symbol get_core_symbol(const rammarket& rm) {
       auto itr = rm.find(ramcore_symbol.raw());
-      eosio::check(itr != rm.end(), "system contract must first be initialized");
+      check(itr != rm.end(), "system contract must first be initialized");
       return itr->quote.balance.symbol;
    }
 

@@ -26,11 +26,11 @@ name basename(name n) {
 }
 
 inline bool has_vauth(name n) {
-   return internal_use_do_not_use::has_auth(basename(n).value);
+   return has_auth(basename(n));
 }
 
 inline void require_vauth(name n) {
-   internal_use_do_not_use::require_auth(basename(n).value);
+   require_auth(basename(n));
 }
 
 }

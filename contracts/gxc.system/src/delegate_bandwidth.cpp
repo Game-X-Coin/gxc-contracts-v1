@@ -342,10 +342,10 @@ void contract::changebw( name from, name receiver,
                                    from
          );
          out.delay_sec = refund_delay_sec;
-         cancel_deferred( from.value ); // TODO: Remove this line when replacing deferred trxs is fixed
+         eosio::cancel_deferred( from.value ); // TODO: Remove this line when replacing deferred trxs is fixed
          out.send( from.value, from, true );
       } else {
-         cancel_deferred( from.value );
+         eosio::cancel_deferred( from.value );
       }
 
       auto transfer_amount = net_balance + cpu_balance;

@@ -48,12 +48,14 @@ void contract::setabi(name account, const std::vector<char>& abi) {
    auto itr = table.find(account.value);
    if (itr == table.end()) {
       table.emplace(account, [&](auto& row) {
-         row.owner= account;
-         eosio::sha256(const_cast<char*>(abi.data()), abi.size());
+         row.owner = account;
+         auto hash = eosio::sha256(const_cast<char*>(abi.data()), abi.size()).extract_as_byte_array();
+         std::copy(hash.begin(), hash.end(), row.hash.begin());
       });
    } else {
       table.modify(itr, same_payer, [&](auto& row) {
-            eosio::sha256(const_cast<char*>(abi.data()), abi.size());
+         auto hash = eosio::sha256(const_cast<char*>(abi.data()), abi.size()).extract_as_byte_array();
+         std::copy(hash.begin(), hash.end(), row.hash.begin());
       });
    }
 }

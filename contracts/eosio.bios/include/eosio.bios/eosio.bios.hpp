@@ -11,7 +11,6 @@ namespace eosio {
    using eosio::permission_level;
    using eosio::public_key;
    using eosio::ignore;
-//   using capi_checksum256 = std::array<uint8_t,32> __attribute__ ((aligned(16)));
 
    struct permission_level_weight {
       permission_level  permission;
