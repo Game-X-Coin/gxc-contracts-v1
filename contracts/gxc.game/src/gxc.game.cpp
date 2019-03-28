@@ -36,5 +36,3 @@ void game_contract::seturi(name name, std::string uri) {
 }
 
 }
-
-EOSIO_DISPATCH(gxc::game_contract, (setgame)(seturi))
