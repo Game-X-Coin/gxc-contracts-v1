@@ -84,8 +84,3 @@ namespace gxc {
       token(_self, value).get_account(owner).approve(spender, value);
    }
 }
-
-EOSIO_DISPATCH(gxc::token_contract,
-   (mint)(transfer)(burn)(setopts)(setacntopts)(open)(close)
-   (deposit)(pushwithdraw)(popwithdraw)(clrwithdraws)(withdraw)(revtwithdraw)(approve)
-)

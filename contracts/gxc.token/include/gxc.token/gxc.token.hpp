@@ -4,9 +4,9 @@
  */
 #pragma once
 
-#include <eosiolib/eosio.hpp>
-#include <eosiolib/asset.hpp>
-#include <eosiolib/time.hpp>
+#include <eosio/eosio.hpp>
+#include <eosio/asset.hpp>
+#include <eosio/system.hpp>
 
 #include <eosio-xt/eosio-xt.hpp>
 #include <gxclib/symbol.hpp>
@@ -154,7 +154,7 @@ namespace gxc {
 
          uint64_t primary_key()const       { return get_id(extended_asset(quantity, issuer)); }
          uint64_t by_scheduled_time()const { return static_cast<uint64_t>(scheduled_time.utc_seconds); }
- 
+
          EOSLIB_SERIALIZE( withdrawal_request, (quantity)(issuer)(scheduled_time) )
       };
 
@@ -288,10 +288,6 @@ namespace gxc {
          friend class token;
          friend class requests;
       };
-
-      static time_point current_time_point() {
-         return time_point(microseconds(static_cast<int64_t>(current_time())));
-      }
 
       class requests : public multi_index_wrapper<withdraws> {
       public:

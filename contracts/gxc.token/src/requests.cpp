@@ -3,7 +3,7 @@
  * @copyright defined in gxc/LICENSE
  */
 #include <gxc.token/gxc.token.hpp>
-#include <eosiolib/transaction.hpp>
+#include <eosio/transaction.hpp>
 
 namespace gxc {
 
