@@ -3,7 +3,6 @@
  * @copyright defined in gxc/LICENSE
  */
 #include <gxc.system/gxc.system.hpp>
-
 #include "native.cpp"
 
 namespace gxc { namespace system {
@@ -25,16 +24,6 @@ gxc_global_state contract::get_default_parameters() {
    return dp;
 }
 
-time_point contract::current_time_point() {
-   const static time_point ct{ microseconds{ static_cast<int64_t>( current_time() ) } };
-   return ct;
-}
-
-block_timestamp contract::current_block_time() {
-   const static block_timestamp cbt{ current_time_point() };
-   return cbt;
-}
-
 symbol contract::core_symbol()const {
    const static auto sym = get_core_symbol( _rammarket );
    return sym;
@@ -43,9 +32,9 @@ symbol contract::core_symbol()const {
 void contract::setram( uint64_t max_ram_size ) {
    require_auth( _self );
 
-   eosio_assert( _gstate.max_ram_size < max_ram_size, "ram may only be increased" ); /// decreasing ram might result market maker issues
-   eosio_assert( max_ram_size < 1024ll*1024*1024*1024*1024, "ram size is unrealistic" );
-   eosio_assert( max_ram_size > _gstate.total_ram_bytes_reserved, "attempt to set max below reserved" );
+   check( _gstate.max_ram_size < max_ram_size, "ram may only be increased" ); /// decreasing ram might result market maker issues
+   check( max_ram_size < 1024ll*1024*1024*1024*1024, "ram size is unrealistic" );
+   check( max_ram_size > _gstate.total_ram_bytes_reserved, "attempt to set max below reserved" );
 
    auto delta = int64_t(max_ram_size) - int64_t(_gstate.max_ram_size);
    auto itr = _rammarket.find(ramcore_symbol.raw());
@@ -95,33 +84,33 @@ void contract::setramrate( uint16_t bytes_per_block ) {
 void contract::setparams( const gxc::blockchain_parameters& params ) {
    require_auth( _self );
    (gxc::blockchain_parameters&)(_gstate) = params;
-   eosio_assert( 3 <= _gstate.max_authority_depth, "max_authority_depth should be at least 3" );
+   check( 3 <= _gstate.max_authority_depth, "max_authority_depth should be at least 3" );
    set_blockchain_parameters( params );
 }
 
 void contract::setpriv( name account, uint8_t ispriv ) {
    require_auth( _self );
-   set_privileged( account.value, ispriv );
+   eosio::set_privileged( account, ispriv );
 }
 
 void contract::setalimits( name account, int64_t ram, int64_t net, int64_t cpu ) {
    require_auth( _self );
    user_resources_table userres( _self, account.value );
    auto ritr = userres.find( account.value );
-   eosio_assert( ritr == userres.end(), "only supports unlimited accounts" );
-   set_resource_limits( account.value, ram, net, cpu );
+   check( ritr == userres.end(), "only supports unlimited accounts" );
+   eosio::set_resource_limits( account, ram, net, cpu );
 }
 
 void contract::init(unsigned_int version, symbol core) {
    require_auth(_self);
-   eosio_assert(version.value == 0, "unsupported version for init action");
+   check(version.value == 0, "unsupported version for init action");
 
    auto itr = _rammarket.find(ramcore_symbol.raw());
-   eosio_assert(itr == _rammarket.end(), "system contract has already been initialized");
+   check(itr == _rammarket.end(), "system contract has already been initialized");
 
    auto system_token_supply = get_supply(_self, core.code());
-   eosio_assert(system_token_supply.symbol == core, "specified core symbol does not exist (precision mismatch)");
-   eosio_assert(system_token_supply.amount >= 0, "system token supply must be greater than 0");
+   check(system_token_supply.symbol == core, "specified core symbol does not exist (precision mismatch)");
+   check(system_token_supply.amount >= 0, "system token supply must be greater than 0");
 
    _rammarket.emplace(_self, [&](auto& m) {
       m.supply.amount = 100'000'000'000'000ll;
@@ -176,8 +165,3 @@ void contract::genaccount(name creator, name name, authority owner, authority ac
 }
 
 } }
-
-GXC_DISPATCH(gxc::system::contract,
-   (newaccount)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)(setabi)(setcode)
-   (init)(setram)(setramrate)(setparams)(setpriv)(setalimits)(genaccount)
-)

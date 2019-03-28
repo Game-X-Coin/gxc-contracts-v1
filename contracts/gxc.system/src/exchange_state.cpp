@@ -25,7 +25,7 @@ asset exchange_state::convert_to_exchange( connector& c, asset in ) {
 }
 
 asset exchange_state::convert_from_exchange( connector& c, asset in ) {
-   eosio_assert( in.symbol== supply.symbol, "unexpected asset symbol input" );
+   eosio::check( in.symbol== supply.symbol, "unexpected asset symbol input" );
 
    real_type R(supply.amount - in.amount);
    real_type C(c.balance.amount);
@@ -65,7 +65,7 @@ asset exchange_state::convert( asset from, const symbol& to ) {
       } else if( sell_symbol == quote_symbol ) {
          from = convert_to_exchange( quote, from );
       } else {
-         eosio_assert( false, "invalid sell" );
+         eosio::check( false, "invalid sell" );
       }
    } else {
       if( to == base_symbol ) {
@@ -73,7 +73,7 @@ asset exchange_state::convert( asset from, const symbol& to ) {
       } else if( to == quote_symbol ) {
          from = convert_from_exchange( quote, from );
       } else {
-         eosio_assert( false, "invalid conversion" );
+         eosio::check( false, "invalid conversion" );
       }
    }
 

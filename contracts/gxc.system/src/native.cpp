@@ -2,6 +2,7 @@
  * @file
  * @copyright defined in gxc/LICENSE
  */
+#include <eosio/crypto.hpp>
 #include <gxc.system/gxc.system.hpp>
 
 #include "exchange_state.cpp"
@@ -22,8 +23,8 @@ void contract::newaccount(name creator, name name, ignore<authority> owner, igno
    require_auth(_self);
 
    if (creator != _self) {
-      eosio_assert(name.length() >= 6, "a name shorter than 6 is reserved");
-      eosio_assert(!has_dot(name), "user account name cannot contain dot");
+      check(name.length() >= 6, "a name shorter than 6 is reserved");
+      check(!has_dot(name), "user account name cannot contain dot");
 
       user_resources_table userres(_self, name.value);
 
@@ -33,14 +34,14 @@ void contract::newaccount(name creator, name name, ignore<authority> owner, igno
          res.cpu_weight = asset(0, system::contract::get_core_symbol());
       });
 
-      set_resource_limits(name.value, 0 + ram_gift_bytes, 0, 0);
+      eosio::set_resource_limits(name, 0 + ram_gift_bytes, 0, 0);
 
       action({{name, active_permission}}, user_account, "payram4nick"_n, name).send();
    }
 }
 
 void contract::setabi(name account, const std::vector<char>& abi) {
-   eosio_assert(is_admin(account), "not allowed to normal account");
+   check(is_admin(account), "not allowed to normal account");
 
    eosio::multi_index<"abihash"_n, abi_hash> table(_self, _self.value);
 
@@ -48,17 +49,17 @@ void contract::setabi(name account, const std::vector<char>& abi) {
    if (itr == table.end()) {
       table.emplace(account, [&](auto& row) {
          row.owner= account;
-         sha256(const_cast<char*>(abi.data()), abi.size(), &row.hash);
+         eosio::sha256(const_cast<char*>(abi.data()), abi.size());
       });
    } else {
       table.modify(itr, same_payer, [&](auto& row) {
-         sha256(const_cast<char*>(abi.data()), abi.size(), &row.hash);
+            eosio::sha256(const_cast<char*>(abi.data()), abi.size());
       });
    }
 }
 
 void contract::setcode(name account, uint8_t vmtype, uint8_t vmversion, const std::vector<char>& code) {
-   eosio_assert(is_admin(account), "not allowed to normal account");
+   check(is_admin(account), "not allowed to normal account");
 }
 
 } }

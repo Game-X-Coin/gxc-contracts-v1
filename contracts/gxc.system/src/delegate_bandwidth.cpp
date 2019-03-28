@@ -4,13 +4,13 @@
  */
 #include <gxc.system/gxc.system.hpp>
 
-#include <eosiolib/eosio.hpp>
-#include <eosiolib/print.hpp>
-#include <eosiolib/datastream.hpp>
-#include <eosiolib/serialize.hpp>
-#include <eosiolib/multi_index.hpp>
-#include <eosiolib/privileged.h>
-#include <eosiolib/transaction.hpp>
+#include <eosio/eosio.hpp>
+#include <eosio/print.hpp>
+#include <eosio/datastream.hpp>
+#include <eosio/serialize.hpp>
+#include <eosio/multi_index.hpp>
+#include <eosio/privileged.hpp>
+#include <eosio/transaction.hpp>
 
 #include <gxclib/token.hpp>
 
@@ -98,8 +98,8 @@ void contract::buyram( name payer, name receiver, asset quant ) {
    require_auth( payer );
    update_ram_supply();
 
-   eosio_assert( quant.symbol == core_symbol(), "must buy ram with core token" );
-   eosio_assert( quant.amount > 0, "must purchase a positive amount" );
+   check( quant.symbol == core_symbol(), "must buy ram with core token" );
+   check( quant.amount > 0, "must purchase a positive amount" );
 
    auto fee = quant;
    fee.amount = ( fee.amount + 199 ) / 200; /// .5% fee (round up)
@@ -128,7 +128,7 @@ void contract::buyram( name payer, name receiver, asset quant ) {
        bytes_out = es.convert( quant_after_fee,  ram_symbol ).amount;
    });
 
-   eosio_assert( bytes_out > 0, "must reserve a positive amount" );
+   check( bytes_out > 0, "must reserve a positive amount" );
 
    _gstate.total_ram_bytes_reserved += uint64_t(bytes_out);
    _gstate.total_ram_stake          += quant_after_fee.amount;
@@ -147,7 +147,7 @@ void contract::buyram( name payer, name receiver, asset quant ) {
             res.ram_bytes += bytes_out;
          });
    }
-   set_resource_limits( res_itr->owner.value, res_itr->ram_bytes + ram_gift_bytes, res_itr->net_weight.amount, res_itr->cpu_weight.amount );
+   eosio::set_resource_limits( res_itr->owner, res_itr->ram_bytes + ram_gift_bytes, res_itr->net_weight.amount, res_itr->cpu_weight.amount );
 }
 
 /**
@@ -160,12 +160,12 @@ void contract::sellram( name account, int64_t bytes ) {
    require_auth( account );
    update_ram_supply();
 
-   eosio_assert( bytes > 0, "cannot sell negative byte" );
+   check( bytes > 0, "cannot sell negative byte" );
 
    user_resources_table  userres( _self, account.value );
    auto res_itr = userres.find( account.value );
-   eosio_assert( res_itr != userres.end(), "no resource row" );
-   eosio_assert( res_itr->ram_bytes >= bytes, "insufficient quota" );
+   check( res_itr != userres.end(), "no resource row" );
+   check( res_itr->ram_bytes >= bytes, "insufficient quota" );
 
    asset tokens_out;
    auto itr = _rammarket.find(ramcore_symbol.raw());
@@ -174,18 +174,18 @@ void contract::sellram( name account, int64_t bytes ) {
        tokens_out = es.convert( asset(bytes, ram_symbol), core_symbol());
    });
 
-   eosio_assert( tokens_out.amount > 1, "token amount received from selling ram is too low" );
+   check( tokens_out.amount > 1, "token amount received from selling ram is too low" );
 
    _gstate.total_ram_bytes_reserved -= static_cast<decltype(_gstate.total_ram_bytes_reserved)>(bytes); // bytes > 0 is asserted above
    _gstate.total_ram_stake          -= tokens_out.amount;
 
    //// this shouldn't happen, but just in case it does we should prevent it
-   eosio_assert( _gstate.total_ram_stake >= 0, "error, attempt to unstake more tokens than previously staked" );
+   check( _gstate.total_ram_stake >= 0, "error, attempt to unstake more tokens than previously staked" );
 
    userres.modify( res_itr, account, [&]( auto& res ) {
        res.ram_bytes -= bytes;
    });
-   set_resource_limits( res_itr->owner.value, res_itr->ram_bytes + ram_gift_bytes, res_itr->net_weight.amount, res_itr->cpu_weight.amount );
+   eosio::set_resource_limits( res_itr->owner, res_itr->ram_bytes + ram_gift_bytes, res_itr->net_weight.amount, res_itr->cpu_weight.amount );
 
    action({ {ram_account, active_permission}, {account, active_permission} },
       token_account, "transfer"_n, std::make_tuple(ram_account, account, asset(tokens_out), std::string("sell ram"), system::account)
@@ -203,8 +203,8 @@ void contract::sellram( name account, int64_t bytes ) {
 void contract::changebw( name from, name receiver,
                                 const asset stake_net_delta, const asset stake_cpu_delta, bool transfer ) {
    require_auth( from );
-   eosio_assert( stake_net_delta.amount != 0 || stake_cpu_delta.amount != 0, "should stake non-zero amount" );
-   eosio_assert( std::abs( (stake_net_delta + stake_cpu_delta).amount )
+   check( stake_net_delta.amount != 0 || stake_cpu_delta.amount != 0, "should stake non-zero amount" );
+   check( std::abs( (stake_net_delta + stake_cpu_delta).amount )
                   >= std::max( std::abs( stake_net_delta.amount ), std::abs( stake_cpu_delta.amount ) ),
                  "net and cpu deltas cannot be opposite signs" );
 
@@ -231,8 +231,8 @@ void contract::changebw( name from, name receiver,
                dbo.cpu_weight    += stake_cpu_delta;
             });
       }
-      eosio_assert( 0 <= itr->net_weight.amount, "insufficient staked net bandwidth" );
-      eosio_assert( 0 <= itr->cpu_weight.amount, "insufficient staked cpu bandwidth" );
+      check( 0 <= itr->net_weight.amount, "insufficient staked net bandwidth" );
+      check( 0 <= itr->cpu_weight.amount, "insufficient staked cpu bandwidth" );
       if ( itr->net_weight.amount == 0 && itr->cpu_weight.amount == 0 ) {
          del_tbl.erase( itr );
       }
@@ -254,13 +254,13 @@ void contract::changebw( name from, name receiver,
                tot.cpu_weight    += stake_cpu_delta;
             });
       }
-      eosio_assert( 0 <= tot_itr->net_weight.amount, "insufficient staked total net bandwidth" );
-      eosio_assert( 0 <= tot_itr->cpu_weight.amount, "insufficient staked total cpu bandwidth" );
+      check( 0 <= tot_itr->net_weight.amount, "insufficient staked total net bandwidth" );
+      check( 0 <= tot_itr->cpu_weight.amount, "insufficient staked total cpu bandwidth" );
 
       int64_t ram_bytes, net, cpu;
-      get_resource_limits( receiver.value, &ram_bytes, &net, &cpu );
+      eosio::get_resource_limits( receiver, ram_bytes, net, cpu );
 
-      set_resource_limits( receiver.value, std::max( tot_itr->ram_bytes + ram_gift_bytes, ram_bytes ), tot_itr->net_weight.amount, tot_itr->cpu_weight.amount );
+      eosio::set_resource_limits( receiver, std::max( tot_itr->ram_bytes + ram_gift_bytes, ram_bytes ), tot_itr->net_weight.amount, tot_itr->cpu_weight.amount );
 
       if ( tot_itr->net_weight.amount == 0 && tot_itr->cpu_weight.amount == 0  && tot_itr->ram_bytes == 0 ) {
          totals_tbl.erase( tot_itr );
@@ -305,8 +305,8 @@ void contract::changebw( name from, name receiver,
                }
             });
 
-            eosio_assert( 0 <= req->net_amount.amount, "negative net refund amount" ); //should never happen
-            eosio_assert( 0 <= req->cpu_amount.amount, "negative cpu refund amount" ); //should never happen
+            check( 0 <= req->net_amount.amount, "negative net refund amount" ); //should never happen
+            check( 0 <= req->cpu_amount.amount, "negative cpu refund amount" ); //should never happen
 
             if ( req->net_amount.amount == 0 && req->cpu_amount.amount == 0 ) {
                refunds_tbl.erase( req );
@@ -362,10 +362,10 @@ void contract::delegatebw( name from, name receiver,
                                   asset stake_cpu_quantity, bool transfer )
 {
    asset zero_asset( 0, core_symbol() );
-   eosio_assert( stake_cpu_quantity >= zero_asset, "must stake a positive amount" );
-   eosio_assert( stake_net_quantity >= zero_asset, "must stake a positive amount" );
-   eosio_assert( stake_net_quantity.amount + stake_cpu_quantity.amount > 0, "must stake a positive amount" );
-   eosio_assert( !transfer || from != receiver, "cannot use transfer flag if delegating to self" );
+   check( stake_cpu_quantity >= zero_asset, "must stake a positive amount" );
+   check( stake_net_quantity >= zero_asset, "must stake a positive amount" );
+   check( stake_net_quantity.amount + stake_cpu_quantity.amount > 0, "must stake a positive amount" );
+   check( !transfer || from != receiver, "cannot use transfer flag if delegating to self" );
 
    changebw( from, receiver, stake_net_quantity, stake_cpu_quantity, transfer);
 } // delegatebw
@@ -374,9 +374,9 @@ void contract::undelegatebw( name from, name receiver,
                                     asset unstake_net_quantity, asset unstake_cpu_quantity )
 {
    asset zero_asset( 0, core_symbol() );
-   eosio_assert( unstake_cpu_quantity >= zero_asset, "must unstake a positive amount" );
-   eosio_assert( unstake_net_quantity >= zero_asset, "must unstake a positive amount" );
-   eosio_assert( unstake_cpu_quantity.amount + unstake_net_quantity.amount > 0, "must unstake a positive amount" );
+   check( unstake_cpu_quantity >= zero_asset, "must unstake a positive amount" );
+   check( unstake_net_quantity >= zero_asset, "must unstake a positive amount" );
+   check( unstake_cpu_quantity.amount + unstake_net_quantity.amount > 0, "must unstake a positive amount" );
    //eosio_assert( _gstate.total_activated_stake >= min_activated_stake,
    //              "cannot undelegate bandwidth until the chain is activated (at least 15% of all tokens participate in voting)" );
 
@@ -389,8 +389,8 @@ void contract::refund( const name owner ) {
 
    refunds_table refunds_tbl( _self, owner.value );
    auto req = refunds_tbl.find( owner.value );
-   eosio_assert( req != refunds_tbl.end(), "refund request not found" );
-   eosio_assert( req->request_time + seconds(refund_delay_sec) <= current_time_point(),
+   check( req != refunds_tbl.end(), "refund request not found" );
+   check( req->request_time + seconds(refund_delay_sec) <= current_time_point(),
                  "refund is not available yet" );
 
    action({ {stake_account, active_permission}, {req->owner, active_permission} },

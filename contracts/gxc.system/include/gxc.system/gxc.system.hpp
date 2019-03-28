@@ -4,14 +4,16 @@
  */
 #pragma once
 
-#include <eosiolib/eosio.hpp>
-#include <eosiolib/time.hpp>
-#include <eosiolib/singleton.hpp>
+#include <eosio/eosio.hpp>
+#include <eosio/system.hpp>
+#include <eosio/time.hpp>
+#include <eosio/singleton.hpp>
 #include <gxclib/dispatcher.hpp>
 #include <gxclib/system.hpp>
 #include <gxclib/chain_types.hpp>
 #include <gxclib/exchange_state.hpp>
 #include <gxclib/name.hpp>
+#include <gxclib/privileged.hpp>
 
 using namespace eosio;
 using namespace eosio::chain;
@@ -128,7 +130,7 @@ private:
 
    static symbol get_core_symbol(const rammarket& rm) {
       auto itr = rm.find(ramcore_symbol.raw());
-      eosio_assert(itr != rm.end(), "system contract must first be initialized");
+      eosio::check(itr != rm.end(), "system contract must first be initialized");
       return itr->quote.balance.symbol;
    }
 
@@ -137,8 +139,6 @@ private:
    }
 
    static gxc_global_state get_default_parameters();
-   static time_point current_time_point();
-   static block_timestamp current_block_time();
 
    symbol core_symbol()const;
 
