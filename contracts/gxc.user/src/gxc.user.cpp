@@ -11,7 +11,7 @@ void user_contract::authenticate(name account_name, name game_name, const string
    require_auth(account_name);
 
    auto expire_time = strtoul(login_token.substr(8).data(), nullptr, 16);
-   check(now() <= expire_time, "login_token is expired");
+   check(current_time_point().sec_since_epoch() <= expire_time, "login_token is expired");
 }
 
 void user_contract::login(name account_name, name game_name, string login_token) {
@@ -59,7 +59,7 @@ void user_contract::rmvnick(name account_name) {
    nicktable nt(_self, _self.value);
 
    auto itr = nt.find(account_name.value);
-   eosio_assert(itr != nt.end(), "nickname not registered");
+   check(itr != nt.end(), "nickname not registered");
 
    nt.erase(itr);
 }
@@ -76,5 +76,3 @@ void user_contract::payram4nick(name account_name) {
 }
 
 }
-
-EOSIO_DISPATCH(gxc::user_contract, (login)(connect)(setnick)(payram4nick))

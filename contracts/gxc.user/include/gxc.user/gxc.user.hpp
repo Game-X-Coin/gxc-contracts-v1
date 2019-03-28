@@ -4,7 +4,9 @@
  */
 #pragma once
 
-#include <eosiolib/eosio.hpp>
+#include <eosio/eosio.hpp>
+#include <eosio/system.hpp>
+#include <eosio/crypto.hpp>
 #include <utf8/utf8.h>
 #include <gxclib/system.hpp>
 
