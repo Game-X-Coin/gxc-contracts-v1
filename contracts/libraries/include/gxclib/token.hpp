@@ -15,7 +15,7 @@
 namespace gxc {
 
 using namespace eosio;
-using namespace internal_use_do_not_use;
+using namespace eosio::internal_use_do_not_use;
 
 constexpr name token_account = "gxc.token"_n;
 
@@ -35,7 +35,7 @@ asset get_balance(name owner, name issuer, symbol_code sym_code) {
    auto esc = extended_symbol_code(sym_code, issuer);
    db_get_i64(db_find_i64(token_account.value, issuer.value, "accounts"_n.value,
                           xxh3_64(reinterpret_cast<const char*>(&esc), sizeof(uint128_t))),
-             reinterpret_cast<void*>(&balance), sizeof(asset));
+              reinterpret_cast<void*>(&balance), sizeof(asset));
    return balance;
 }
 
