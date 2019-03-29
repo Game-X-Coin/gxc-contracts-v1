@@ -18,7 +18,7 @@ find_package(eosio.cdt)
 
 message(STATUS "Building eosio.contracts v${VERSION_FULL}")
 
-set(EOSIO_CDT_VERSION_MIN "1.5")
+set(EOSIO_CDT_VERSION_MIN "1.6")
 set(EOSIO_CDT_VERSION_SOFT_MAX "1.6")
 #set(EOSIO_CDT_VERSION_HARD_MAX "")
 

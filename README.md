@@ -20,7 +20,7 @@ The following contracts are not migrated yet, but can be used in boot step.
 
 Dependencies:
 * [gxc v1.7.x](https://github.com/Game-X-Coin/gxc/releases/tag/gxc-1.7.0)
-* [eosio.cdt v1.5.x](https://github.com/EOSIO/eosio.cdt/releases/tag/v1.5.0)
+* [eosio.cdt v1.6.x](https://github.com/EOSIO/eosio.cdt/releases/tag/v1.6.1)
 
 To build the contracts and the unit tests:
 * First, ensure that your __gxc__ is compiled to the core symbol for the GXC blockchain that intend to deploy to.
