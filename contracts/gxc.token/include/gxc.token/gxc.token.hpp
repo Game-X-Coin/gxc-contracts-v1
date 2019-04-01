@@ -4,11 +4,12 @@
  */
 #pragma once
 
+#include <gxc.token/config.hpp>
+
 #include <eosio/eosio.hpp>
 #include <eosio/asset.hpp>
 #include <eosio/system.hpp>
 
-#include <eosio-xt/eosio-xt.hpp>
 #include <gxclib/symbol.hpp>
 #include <gxclib/action.hpp>
 
@@ -68,7 +69,7 @@ namespace gxc {
 
       static uint64_t get_id(const extended_asset& value) {
          auto sym_code = extended_symbol_code(value.quantity.symbol, value.contract);
-         return xxh3_64(reinterpret_cast<const char*>(&sym_code), sizeof(uint128_t));
+         return token_hash(reinterpret_cast<const char*>(&sym_code), sizeof(uint128_t));
       }
 
       struct [[eosio::table("accounts"), eosio::contract("gxc.token")]] account_balance {
@@ -173,7 +174,7 @@ namespace gxc {
             datastream<char*> ds(raw.data(), raw.size());
             ds << spender;
             ds << sym_code;
-            return xxh3_64(raw.data(), raw.size());
+            return token_hash(raw.data(), raw.size());
          }
 
          uint64_t primary_key()const { return get_id(spender, extended_asset(quantity, issuer)); }
