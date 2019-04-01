@@ -184,7 +184,7 @@ namespace gxc {
          time_point_sec scheduled_time;
 
          inline extended_asset value()const { return extended_asset(quantity, issuer); }
-        
+
          uint64_t primary_key()const       { return get_id(extended_asset(quantity, issuer)); }
          uint64_t by_scheduled_time()const { return static_cast<uint64_t>(scheduled_time.utc_seconds); }
 
@@ -264,7 +264,7 @@ namespace gxc {
 
          account get_account(name owner)const {
             check(exists(), "token not found");
-            auto _account = account(code(), owner, get_id(extended_asset(asset(0, _this->supply.symbol), _this->issuer)), *this);           
+            auto _account = account(code(), owner, get_id(extended_asset(asset(0, _this->supply.symbol), _this->issuer)), *this);
             return _account;
          }
 
