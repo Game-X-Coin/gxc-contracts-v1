@@ -14,8 +14,8 @@ using eosio::check;
 constexpr name game_account = "gxc.game"_n;
 
    struct [[eosio::table, eosio::contract("gxc.game")]] game {
-      name        name;
-      std::string uri;
+      name        name; /**< Game account name */
+      std::string uri;  /**< Game metadata */
 
       uint64_t primary_key()const { return name.value; }
 
@@ -24,11 +24,25 @@ constexpr name game_account = "gxc.game"_n;
 
    typedef eosio::multi_index<"game"_n, game> games;
 
+   /**
+    * Verifies that @ref name has game auth.
+    * Game auth is required to mint game token.
+    *
+    * @brief Verifies that @ref name has game auth.
+    * @param name - name of the account to be verified
+    */
    bool has_gauth(name name) {
       games gms(game_account, game_account.value);
       return gms.find(basename(name).value) != gms.end();
    }
 
+   /**
+    * Verifies that @ref name has game auth. Fails if not found.
+    * Game auth is required to mint game token.
+    *
+    * @brief Verifies that @ref name has game auth.
+    * @param name - name of the account to be verified
+    */
    void require_gauth(name name) {
       check(has_gauth(name), "not registered to game account");
    }
