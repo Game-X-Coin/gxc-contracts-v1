@@ -52,12 +52,8 @@ namespace gxc {
       token(_self, value).burn(value);
    }
 
-   void token_contract::open(name owner, name issuer, symbol_code symbol, std::vector<key_value> opts) {
-      auto _token = token(_self, issuer, symbol);
-
-      auto _account = _token.get_account(owner);
-      _account.open();
-      _account.setopts(opts);
+   void token_contract::open(name owner, name issuer, symbol_code symbol, name payer) {
+      token(_self, issuer, symbol).get_account(owner).paid_by(payer).open();
    }
 
    void token_contract::close(name owner, name issuer, symbol_code symbol) {

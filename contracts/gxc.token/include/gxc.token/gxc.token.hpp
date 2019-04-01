@@ -41,7 +41,7 @@ namespace gxc {
       void setacntopts(name account, name issuer, symbol_code symbol, std::vector<key_value> opts);
 
       [[eosio::action]]
-      void open(name owner, name issuer, symbol_code symbol, std::vector<key_value> opts);
+      void open(name owner, name issuer, symbol_code symbol, name payer);
 
       [[eosio::action]]
       void close(name owner, name issuer, symbol_code symbol);
@@ -263,7 +263,7 @@ namespace gxc {
 
          account get_account(name owner)const {
             check(exists(), "token not found");
-            auto _account = account(code(), owner, get_id(extended_asset(asset(0, _this->supply.symbol), _this->issuer)), this);
+            auto _account = account(code(), owner, get_id(extended_asset(asset(0, _this->supply.symbol), _this->issuer)), *this);
             return _account;
          }
 
@@ -277,7 +277,7 @@ namespace gxc {
       public:
          using opt = account_balance::opt;
 
-         account(name receiver, name code, uint64_t key, const token* st)
+         account(name receiver, name code, uint64_t key, const token& st)
          : multi_index_wrapper(receiver, code, key)
          , _st(st)
          {}
@@ -285,7 +285,7 @@ namespace gxc {
          void check_account_is_valid() {
             if (code() != owner()) {
                check(!_this->get_opt(opt::frozen), "account is frozen");
-               check(!(*_st)->get_opt(token::opt::whitelist_on) || _this->get_opt(opt::whitelist), "account is not whitelisted");
+               check(!_st->get_opt(token::opt::whitelist_on) || _this->get_opt(opt::whitelist), "account is not whitelisted");
             }
          }
 
@@ -295,9 +295,9 @@ namespace gxc {
          void approve(name spender, extended_asset value);
 
          inline name owner()const  { return scope(); }
-         inline name issuer()const { return _st->scope(); }
+         inline name issuer()const { return _st.scope(); }
 
-         inline const token& get_token()const { return *_st; }
+         inline const token& get_token()const { return _st; }
 
          account& keep() {
             keep_balance = true;
@@ -309,9 +309,15 @@ namespace gxc {
             return *this;
          }
 
+         account& paid_by(name payer) {
+            ram_payer = payer;
+            return *this;
+         }
+
       private:
-         const token* _st;
+         const token& _st;
          bool  keep_balance;
+         name  ram_payer = eosio::same_payer;
 
          void sub_balance(extended_asset value);
          void add_balance(extended_asset value);

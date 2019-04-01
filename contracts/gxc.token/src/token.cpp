@@ -95,7 +95,7 @@ namespace gxc {
       auto _to = get_account(to);
 
       if (_this->get_opt(opt::recallable) && (to != value.contract))
-         _to.add_deposit(value);
+         _to.paid_by(code()).add_deposit(value);
       else
          _to.add_balance(value);
 
@@ -123,7 +123,7 @@ namespace gxc {
       if (!is_recall)
          _to.sub_balance(value);
       else
-         _to.sub_deposit(value);
+         _to.paid_by(code()).sub_deposit(value);
    }
 
    void token_contract::token::burn(extended_asset value) {
@@ -199,8 +199,17 @@ namespace gxc {
          }
       }
 
+      name payer;
+
+      // case is_recall   : in-game transfer
+      // case has_auth(to): approved transfer
+      // case else        : all other cases
+      if (is_recall) payer = code();
+      else if (has_auth(to)) payer = to;
+      else payer = from;
+
       // add asset to `to`
-      get_account(to).add_balance(value);
+      get_account(to).paid_by(payer).add_balance(value);
    }
 
    void token_contract::token::deposit(name owner, extended_asset value) {
@@ -210,7 +219,7 @@ namespace gxc {
       auto _owner = get_account(owner);
 
       _owner.sub_balance(value);
-      _owner.add_deposit(value);
+      _owner.paid_by(owner).add_deposit(value);
    }
 
    void token_contract::token::withdraw(name owner, extended_asset value) {
@@ -250,7 +259,7 @@ namespace gxc {
 
       auto value = extended_asset(_req->quantity, _req->issuer);
       get_account(code()).sub_balance(value);
-      get_account(owner).add_deposit(value);
+      get_account(owner).paid_by(owner).add_deposit(value);
 
       event_revtwithdraw(code(), {code(), "active"_n}).send(owner, value);
 

@@ -10,15 +10,15 @@ namespace gxc {
       check(opts.size(), "no changes on options");
       require_vauth(issuer());
 
-      modify(same_payer, [&](auto& a) {
+      modify(ram_payer, [&](auto& a) {
          for (auto o : opts) {
             if (o.first == "frozen") {
-               check((*_st)->get_opt(token::opt::freezable), "not configured to freeze account");
+               check(_st->get_opt(token::opt::freezable), "not configured to freeze account");
                auto value = unpack<bool>(o.second);
                check(a.get_opt(opt::frozen) != value, "option already has give value");
                a.set_opt(opt::frozen, value);
             } else if (o.first == "whitelist") {
-               check((*_st)->get_opt(token::opt::whitelistable), "not configured to whitelist account");
+               check(_st->get_opt(token::opt::whitelistable), "not configured to whitelist account");
                auto value = unpack<bool>(o.second);
                check(a.get_opt(opt::whitelist) != value, "option already has give value");
                a.set_opt(opt::whitelist, value);
@@ -39,7 +39,7 @@ namespace gxc {
       {
          erase();
       } else {
-         modify(same_payer, [&](auto& a) {
+         modify(ram_payer, [&](auto& a) {
             a.balance -= value.quantity;
          });
       }
@@ -47,15 +47,15 @@ namespace gxc {
 
    void token_contract::account::add_balance(extended_asset value) {
       if (!exists()) {
-         check(!(*_st)->get_opt(token::opt::whitelist_on) || has_vauth(value.contract), "required to open balance manually");
-         emplace(code(), [&](auto& a) {
+         check(!_st->get_opt(token::opt::whitelist_on) || has_vauth(value.contract), "required to open balance manually");
+         emplace(ram_payer, [&](auto& a) {
             a.balance = value.quantity;
             a.set_deposit(asset(0, value.quantity.symbol));
             a.set_issuer(value.contract);
          });
       } else {
          check_account_is_valid();
-         modify(same_payer, [&](auto& a) {
+         modify(ram_payer, [&](auto& a) {
             a.balance += value.quantity;
          });
       }
@@ -71,7 +71,7 @@ namespace gxc {
       {
          erase();
       } else {
-         modify(same_payer, [&](auto& a) {
+         modify(ram_payer, [&](auto& a) {
             a.set_deposit(a.get_deposit() - value.quantity);
          });
       }
@@ -79,26 +79,25 @@ namespace gxc {
 
    void token_contract::account::add_deposit(extended_asset value) {
       if (!exists()) {
-         check(!(*_st)->get_opt(token::opt::whitelist_on) || has_vauth(value.contract), "required to open deposit manually");
-         _tbl.emplace(code(), [&](auto& a) {
+         check(!_st->get_opt(token::opt::whitelist_on) || has_vauth(value.contract), "required to open deposit manually");
+         emplace(ram_payer, [&](auto& a) {
             a.balance = asset(0, value.quantity.symbol);
             a.set_deposit(value.quantity);
             a.set_issuer(value.contract);
          });
       } else {
          check_account_is_valid();
-         _tbl.modify(_this, same_payer, [&](auto& a) {
+         modify(ram_payer, [&](auto& a) {
             a.set_deposit(a.get_deposit() + value.quantity);
          });
       }
    }
 
    void token_contract::account::open() {
-      require_vauth(issuer());
       if (!exists()) {
-         _tbl.emplace(code(), [&](auto& a) {
-            a.balance.symbol = (*_st)->supply.symbol;
-            a.set_issuer((*_st)->issuer);
+         emplace(ram_payer, [&](auto& a) {
+            a.balance.symbol = _st->supply.symbol;
+            a.set_issuer(_st->issuer);
          });
       }
    }
@@ -107,7 +106,7 @@ namespace gxc {
       require_auth(owner());
       check(exists(), "account balance doesn't exist");
       check(!_this->balance.amount && !_this->get_deposit().amount, "cannot close non-zero balance");
-      _tbl.erase(_this);
+      erase();
    }
 
    void token_contract::account::approve(name spender, extended_asset value) {

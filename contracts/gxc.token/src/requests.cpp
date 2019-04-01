@@ -10,7 +10,7 @@ namespace gxc {
    constexpr name active_permission {"active"_n};
 
    void token_contract::requests::refresh_schedule(time_point_sec base_time) {
-      auto _idx = _tbl.get_index<"schedtime"_n>();
+      auto _idx = get_index<"schedtime"_n>();
       auto _it = _idx.begin();
 
       if (_it != _idx.end()) {
@@ -36,7 +36,7 @@ namespace gxc {
    void token_contract::requests::clear() {
       require_auth(owner());
 
-      auto _idx = _tbl.get_index<"schedtime"_n>();
+      auto _idx = get_index<"schedtime"_n>();
       auto _it = _idx.begin();
 
       check(_it != _idx.end(), "withdrawal requests not found");
