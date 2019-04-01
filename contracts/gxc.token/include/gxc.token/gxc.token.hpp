@@ -23,6 +23,8 @@ namespace gxc {
 
       void regtoken(name issuer, symbol_code symbol, name contract);
 
+      // ACTION LIST BEGIN
+
       [[eosio::action]]
       void mint(extended_asset value, std::vector<key_value> opts);
 
@@ -61,10 +63,14 @@ namespace gxc {
 
       // dummy actions
       [[eosio::action]]
-      void withdraw(name owner, extended_asset value) {}
+      void withdraw(name owner, extended_asset value) { require_auth(_self); }
+      typedef action_wrapper<"withdraw"_n, &token_contract::withdraw> event_withdraw;
 
       [[eosio::action]]
-      void revtwithdraw(name owner, extended_asset value) {}
+      void revtwithdraw(name owner, extended_asset value) { require_auth(_self); }
+      typedef action_wrapper<"revtwithdraw"_n, &token_contract::revtwithdraw> event_revtwithdraw;
+
+      // ACTION LIST END
 
       static uint64_t get_id(const extended_asset& value) {
          auto sym_code = extended_symbol_code(value.quantity.symbol, value.contract);
@@ -72,30 +78,43 @@ namespace gxc {
       }
 
       struct [[eosio::table("accounts"), eosio::contract("gxc.token")]] account_balance {
+         asset     balance;  // 16
+         name      _issuer;  // 24, the lowest 4 bits assigned to opts
+         int64_t   _deposit; // 32
+
          enum opt {
             frozen = 0,
             whitelist
          };
 
-         asset     balance;  // 16
-         name      _issuer;  // 24, the lowest 4 bits assigned to opts
-         int64_t   _deposit; // 32
+         name get_issuer()const {
+            return name(_issuer.value & 0xFFFFFFFFFFFFFFF0ULL);
+         }
 
-         name get_issuer()const { return name(_issuer.value & 0xFFFFFFFFFFFFFFF0ULL); }
-         void set_issuer(name issuer) { _issuer = name((_issuer.value & 0xF) | issuer.value); }
-         asset get_deposit()const { return asset(_deposit, balance.symbol); }
+         void set_issuer(name issuer) {
+            _issuer = name((_issuer.value & 0xF) | issuer.value);
+         }
+
+         asset get_deposit()const {
+            return asset(_deposit, balance.symbol);
+         }
+
          void set_deposit(const asset& quantity) {
             check(quantity.symbol == balance.symbol, "symbol mismatch");
             _deposit = quantity.amount;
          }
-         bool get_opt(opt option)const { return (_issuer.value >> (0 + option)) & 0x1; }
+
+         bool get_opt(opt option)const {
+            return (_issuer.value >> (0 + option)) & 0x1;
+         }
+
          void set_opt(opt option, bool val) {
             if (val) _issuer.value |= 0x1 << option;
             else     _issuer.value &= ~(0x1 << option);
          }
 
          uint64_t primary_key()const { return get_id(extended_asset(balance, get_issuer())); }
-         uint64_t by_issuer()const   { return _issuer.value & 0xFFFFFFFFFFFFFFF0ULL; }
+         uint64_t by_issuer()const   { return get_issuer().value; }
 
          EOSLIB_SERIALIZE( account_balance, (balance)(_issuer)(_deposit) )
       };
@@ -105,6 +124,13 @@ namespace gxc {
               > accounts;
 
       struct [[eosio::table("stat"), eosio::contract("gxc.token")]] currency_stats {
+         asset    supply;      // 16
+         int64_t  _max_supply; // 24
+         name     issuer;      // 32
+         uint32_t _opts = 0x7; // 36, defaults to (mintable, recallable, freezable)
+         uint32_t withdraw_delay_sec = 24 * 3600; // 40, defaults to 1 day
+         int64_t  _withdraw_min_amount; // 48
+
          enum opt {
             mintable = 0,
             recallable,
@@ -115,24 +141,28 @@ namespace gxc {
             whitelist_on
          };
 
-         asset    supply;      // 16
-         int64_t  _max_supply; // 24
-         name     issuer;      // 32
-         uint32_t _opts = 0x7; // 36, defaults to (mintable, recallable, freezable)
-         uint32_t withdraw_delay_sec = 24 * 3600; // 40, defaults to 1 day
-         int64_t  _withdraw_min_amount; // 48
+         asset get_max_supply()const {
+            return asset(_max_supply, supply.symbol);
+         }
 
-         asset get_max_supply()const { return asset(_max_supply, supply.symbol); }
          void set_max_supply(const asset& quantity) {
             check(quantity.symbol == supply.symbol, "symbol mismatch");
             _max_supply = quantity.amount;
          }
-         bool get_opt(opt option)const { return (_opts >> (0 + option)) & 0x1; }
+
+         bool get_opt(opt option)const {
+            return (_opts >> (0 + option)) & 0x1;
+         }
+
          void set_opt(opt option, bool val) {
             if (val) _opts |= 0x1 << option;
             else     _opts &= ~(0x1 << option);
          }
-         asset get_withdraw_min_amount()const { return asset(_withdraw_min_amount, supply.symbol); }
+
+         asset get_withdraw_min_amount()const {
+            return asset(_withdraw_min_amount, supply.symbol);
+         }
+
          void set_withdraw_min_amount(const asset& quantity) {
             check(quantity.symbol == supply.symbol, "symbol mismatch");
             check(quantity.amount > 0, "withdraw_min_amount should be positive");
@@ -151,6 +181,8 @@ namespace gxc {
          asset          quantity;
          name           issuer;
          time_point_sec scheduled_time;
+
+         inline extended_asset value()const { return extended_asset(quantity, issuer); }
 
          uint64_t primary_key()const       { return get_id(extended_asset(quantity, issuer)); }
          uint64_t by_scheduled_time()const { return static_cast<uint64_t>(scheduled_time.utc_seconds); }
@@ -175,6 +207,8 @@ namespace gxc {
             ds << sym_code;
             return xxh3_64(raw.data(), raw.size());
          }
+
+         inline extended_asset value()const { return extended_asset(quantity, issuer); }
 
          uint64_t primary_key()const { return get_id(spender, extended_asset(quantity, issuer)); }
 

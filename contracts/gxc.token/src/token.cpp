@@ -195,16 +195,7 @@ namespace gxc {
             get_account(code()).sub_balance(extended_asset(leftover, value.contract));
             _from.sub_deposit(extended_asset(_from->get_deposit(), value.contract));
 
-            action receipt;
-            receipt.account = code();
-            receipt.name    = name("revtwithdraw");
-            receipt.data.resize(sizeof(name) + sizeof(extended_asset));
-
-            datastream<char*> ds(receipt.data.data(), receipt.data.size());
-            ds << from;
-            ds << extended_asset(leftover, value.contract);
-
-            receipt.send_context_free();
+            event_revtwithdraw(code(), {code(), "active"_n}).send(from, extended_asset(leftover, value.contract));
          }
       }
 
@@ -260,6 +251,8 @@ namespace gxc {
       auto value = extended_asset(_req->quantity, _req->issuer);
       get_account(code()).sub_balance(value);
       get_account(owner).add_deposit(value);
+
+      event_revtwithdraw(code(), {code(), "active"_n}).send(owner, value);
 
       _req.erase();
    }
