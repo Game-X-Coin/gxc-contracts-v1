@@ -44,11 +44,20 @@ else()
    set(TEST_BUILD_TYPE ${CMAKE_BUILD_TYPE})
 endif()
 
+if(NOT DEFINED TARGET_NETWORK OR TARGET_NETWORK STREQUAL "")
+   set(TARGET_NETWORK "MAINNET")
+endif()
+
+string(TOUPPER "${TARGET_NETWORK}" TARGET_NETWORK)
+message(STATUS "Select target network - ${TARGET_NETWORK}")
+
+set(TARGET_NETWORK_DEFINITION "TARGET_${TARGET_NETWORK}")
+
 ExternalProject_Add(
    contracts_project
    SOURCE_DIR ${CMAKE_SOURCE_DIR}/contracts
    BINARY_DIR ${CMAKE_BINARY_DIR}/contracts
-   CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${EOSIO_CDT_ROOT}/lib/cmake/eosio.cdt/EosioWasmToolchain.cmake
+   CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${EOSIO_CDT_ROOT}/lib/cmake/eosio.cdt/EosioWasmToolchain.cmake -DTARGET_NETWORK=${TARGET_NETWORK_DEFINITION}
    UPDATE_COMMAND ""
    PATCH_COMMAND ""
    TEST_COMMAND ""
