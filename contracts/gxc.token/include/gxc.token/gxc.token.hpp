@@ -17,6 +17,8 @@ using namespace eosio;
 
 namespace gxc {
 
+   constexpr name active_permission {"active"_n};
+
    class [[eosio::contract("gxc.token")]] token_contract : public contract {
    public:
       using contract::contract;

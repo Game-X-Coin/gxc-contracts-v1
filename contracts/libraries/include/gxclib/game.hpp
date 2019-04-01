@@ -24,11 +24,12 @@ constexpr name game_account = "gxc.game"_n;
 
    typedef eosio::multi_index<"game"_n, game> games;
 
-   void check_is_game(name name) {
+   bool has_gauth(name name) {
       games gms(game_account, game_account.value);
-      auto it = gms.find(basename(name).value);
-
-      check(it != gms.end(), "not registered to game account");
+      return gms.find(basename(name).value) != gms.end();
    }
 
+   void require_gauth(name name) {
+      check(has_gauth(name), "not registered to game account");
+   }
 }

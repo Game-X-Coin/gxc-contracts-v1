@@ -7,8 +7,6 @@
 
 namespace gxc {
 
-   constexpr name active_permission {"active"_n};
-
    void token_contract::requests::refresh_schedule(time_point_sec base_time) {
       auto _idx = get_index<"schedtime"_n>();
       auto _it = _idx.begin();
@@ -46,9 +44,9 @@ namespace gxc {
          if (_it->scheduled_time > current_time_point()) break;
 
          _token.get_account(code()).sub_balance(_it->value());
-         _token.get_account(owner()).add_balance(_it->value());
+         _token.get_account(owner()).paid_by(owner()).add_balance(_it->value());
 
-         event_withdraw(code(), {code(), "active"_n}).send(owner(), _it->value());
+         event_withdraw(code(), {code(), active_permission}).send(owner(), _it->value());
 
          _idx.erase(_it);
       }

@@ -4,6 +4,7 @@
  */
 
 #include <gxc.token/gxc.token.hpp>
+#include <gxclib/game.hpp>
 
 namespace gxc {
 
@@ -92,12 +93,14 @@ namespace gxc {
          s.supply += value.quantity;
       });
 
+      name payer = (value.contract == "gxc"_n || has_gauth(value.contract)) ? code() : value.contract;
+
       auto _to = get_account(to);
 
       if (_this->get_opt(opt::recallable) && (to != value.contract))
          _to.paid_by(code()).add_deposit(value);
       else
-         _to.add_balance(value);
+         _to.paid_by(payer).add_balance(value);
 
    }
 
@@ -175,14 +178,14 @@ namespace gxc {
       } else {
          // normal case, transfer from's deposit
          if (_from->get_deposit() >= value.quantity) {
-            _from.sub_deposit(value);
+            _from.paid_by(code()).sub_deposit(value);
          } else {
             // exceptional case, cached amount is not enough
             // so withdrawal request is partially cancelled
             auto leftover = value.quantity - _from->get_deposit();
             auto _req = requests(code(), from, value);
             check(_req, "overdrawn deposit, but no withdrawal request");
-            check(_req->quantity >= leftover, "overdraw deposit, but not enough withdrawal requested amount");
+            check(_req->quantity >= leftover, "overdrawn deposit, but not enough withdrawal requested amount");
 
             if (_req->quantity > leftover) {
                _req.modify(same_payer, [&](auto& rq) {
@@ -193,9 +196,9 @@ namespace gxc {
                _req.refresh_schedule();
             }
             get_account(code()).sub_balance(extended_asset(leftover, value.contract));
-            _from.sub_deposit(extended_asset(_from->get_deposit(), value.contract));
+            _from.paid_by(code()).sub_deposit(extended_asset(_from->get_deposit(), value.contract));
 
-            event_revtwithdraw(code(), {code(), "active"_n}).send(from, extended_asset(leftover, value.contract));
+            event_revtwithdraw(code(), {code(), active_permission}).send(from, extended_asset(leftover, value.contract));
          }
       }
 
@@ -246,7 +249,7 @@ namespace gxc {
       }
 
       get_account(owner).keep().sub_deposit(value);
-      get_account(code()).add_balance(value);
+      get_account(code()).paid_by(code()).add_balance(value);
 
       _req.refresh_schedule(ctp + seconds(_this->withdraw_delay_sec));
    }
@@ -261,7 +264,7 @@ namespace gxc {
       get_account(code()).sub_balance(value);
       get_account(owner).paid_by(owner).add_deposit(value);
 
-      event_revtwithdraw(code(), {code(), "active"_n}).send(owner, value);
+      event_revtwithdraw(code(), {code(), active_permission}).send(owner, value);
 
       _req.erase();
    }
