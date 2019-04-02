@@ -98,7 +98,7 @@ public:
    void setpriv(name account, uint8_t is_priv);
 
    [[eosio::action]]
-   void updtrevision(uint8_t revision) {}
+   void updtrevision(uint8_t revision) { check(false, "not activated action"); }
 
    [[eosio::action]]
    void genaccount(name creator, name name, authority owner, authority active, std::string nickname);

@@ -78,6 +78,7 @@ typedef eosio::multi_index< "refunds"_n, refund_request >      refunds_table;
  *  This action will buy an exact amount of ram and bill the payer the current market price.
  */
 void system_contract::buyrambytes( name payer, name receiver, uint32_t bytes ) {
+   check(false, "not activated action");
 
    auto itr = _rammarket.find(ramcore_symbol.raw());
    auto tmp = *itr;
@@ -95,6 +96,8 @@ void system_contract::buyrambytes( name payer, name receiver, uint32_t bytes ) {
  *  priced using the bancor algorithm such that price-per-byte with a constant reserve ratio of 100:1.
  */
 void system_contract::buyram( name payer, name receiver, asset quant ) {
+   check(false, "not activated action");
+
    require_auth( payer );
    update_ram_supply();
 
@@ -157,6 +160,8 @@ void system_contract::buyram( name payer, name receiver, asset quant ) {
  *  for RAM over time.
  */
 void system_contract::sellram( name account, int64_t bytes ) {
+   check(false, "not activated action");
+
    require_auth( account );
    update_ram_supply();
 
@@ -361,6 +366,7 @@ void system_contract::delegatebw( name from, name receiver,
                                   asset stake_net_quantity,
                                   asset stake_cpu_quantity, bool transfer )
 {
+   check(false, "not activated action");
    asset zero_asset( 0, core_symbol() );
    check( stake_cpu_quantity >= zero_asset, "must stake a positive amount" );
    check( stake_net_quantity >= zero_asset, "must stake a positive amount" );
@@ -373,6 +379,7 @@ void system_contract::delegatebw( name from, name receiver,
 void system_contract::undelegatebw( name from, name receiver,
                                     asset unstake_net_quantity, asset unstake_cpu_quantity )
 {
+   check(false, "not activated action");
    asset zero_asset( 0, core_symbol() );
    check( unstake_cpu_quantity >= zero_asset, "must unstake a positive amount" );
    check( unstake_net_quantity >= zero_asset, "must unstake a positive amount" );
@@ -385,6 +392,8 @@ void system_contract::undelegatebw( name from, name receiver,
 
 
 void system_contract::refund( const name owner ) {
+   check(false, "not activated action");
+
    require_auth( owner );
 
    refunds_table refunds_tbl( _self, owner.value );
