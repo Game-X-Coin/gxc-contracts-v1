@@ -46,7 +46,7 @@ namespace gxc {
          _token.get_account(code()).sub_balance(_it->value());
          _token.get_account(owner()).paid_by(owner()).add_balance(_it->value());
 
-         withdraw_processed(code(), {code(), "active"_n}).send(owner(), _it->value());
+         withdraw_processed(code(), {code(), active_permission}).send(owner(), _it->value());
 
          _idx.erase(_it);
       }

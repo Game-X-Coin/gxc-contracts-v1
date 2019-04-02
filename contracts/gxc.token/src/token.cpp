@@ -198,7 +198,7 @@ namespace gxc {
             get_account(code()).sub_balance(extended_asset(leftover, value.contract));
             _from.paid_by(code()).sub_deposit(extended_asset(_from->deposit(), value.contract));
 
-            withdraw_reverted(code(), {code(), "active"_n}).send(from, extended_asset(leftover, value.contract));
+            withdraw_reverted(code(), {code(), active_permission}).send(from, extended_asset(leftover, value.contract));
          }
       }
 
@@ -264,7 +264,7 @@ namespace gxc {
       get_account(code()).sub_balance(value);
       get_account(owner).paid_by(owner).add_deposit(value);
 
-      withdraw_reverted(code(), {code(), "active"_n}).send(owner, value);
+      withdraw_reverted(code(), {code(), active_permission}).send(owner, value);
 
       _req.erase();
    }
