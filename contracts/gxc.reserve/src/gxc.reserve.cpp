@@ -5,7 +5,7 @@
 #include <gxc.reserve/gxc.reserve.hpp>
 #include <gxclib/token.hpp>
 
-using token_contract = gxc::token_contract_mock;
+using token = gxc::token_contract_mock;
 
 namespace gxc {
 
@@ -39,10 +39,10 @@ void reserve::mint(extended_asset derivative, extended_asset underlying, std::ve
 
    // TODO: check allowance
    // deposit underlying asset to reserve
-   token_contract({{_self, active_permission}}).transfer(basename(derivative.contract), _self, underlying, "deposit in reserve");
+   token(_self).transfer(basename(derivative.contract), _self, underlying, "deposit in reserve");
 
    // create derivative token
-   token_contract({{token_account, active_permission}}).mint(derivative, opts);
+   token(token_account).mint(derivative, opts);
 }
 
 void reserve::claim(name owner, extended_asset value) {
@@ -65,10 +65,10 @@ void reserve::claim(name owner, extended_asset value) {
    value.quantity.amount = static_cast<int64_t>(get_float_amount(claimed_asset) / ratio * pow(10, it.derivative.symbol.precision()));
 
    // transfer token
-   token_contract({{_self, active_permission}}).transfer(owner, _self, value, "claim reserve");
-   token_contract({{_self, active_permission}}).transfer(_self, basename(value.contract), value, "claim reserve");
-   token_contract({{token_account, active_permission}}).burn(value, "claim reserve");
-   token_contract({{_self, active_permission}}).transfer(_self, owner, extended_asset(claimed_asset, system_account), "claim reserve");
+   token(_self).transfer(owner, _self, value, "claim reserve");
+   token(_self).transfer(_self, basename(value.contract), value, "claim reserve");
+   token(token_account).burn(value, "claim reserve");
+   token(_self).transfer(_self, owner, extended_asset(claimed_asset, system_account), "claim reserve");
 }
 
 } /// namespace gxc
