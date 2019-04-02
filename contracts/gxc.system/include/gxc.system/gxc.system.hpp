@@ -18,7 +18,7 @@
 using namespace eosio;
 using namespace eosio::chain;
 
-namespace gxc { namespace system {
+namespace gxc {
 
 struct [[eosio::table("global"), eosio::contract("gxc.system")]] gxc_global_state : gxc::blockchain_parameters {
    uint64_t free_ram()const { return max_ram_size - total_ram_bytes_reserved; }
@@ -37,10 +37,10 @@ struct [[eosio::table("global"), eosio::contract("gxc.system")]] gxc_global_stat
    )
 };
 
-class [[eosio::contract("gxc.system")]] contract : public eosio::contract {
+class [[eosio::contract("gxc.system")]] system_contract : public contract {
 public:
-   contract(name s, name code, datastream<const char*> ds);
-   ~contract();
+   system_contract(name s, name code, datastream<const char*> ds);
+   ~system_contract();
 
    static constexpr name ram_account {"gxc.ram"_n};
    static constexpr name ramfee_account {"gxc.ramfee"_n};
@@ -51,72 +51,102 @@ public:
 
    static constexpr int64_t ram_gift_bytes = 4 * 1024; // 4KiB
 
-   static symbol get_core_symbol(name system_account = system::account) {
+   static symbol get_core_symbol(name system_account = gxc::system_account) {
       rammarket rm(system_account, system_account.value);
       const static auto sym = get_core_symbol( rm );
       return sym;
    }
 
    // system contract actions
-   [[eosio::action]] void init (unsigned_int version, symbol core);
-   [[eosio::action]] void onblock (ignore<block_header> header);
-   [[eosio::action]] void setalimits (name account, int64_t ram_bytes, int64_t net_weight, int64_t cpu_weight);
-   [[eosio::action]] void buyram (name payer, name receiver, asset quant);
-   [[eosio::action]] void buyrambytes (name payer, name receiver, uint32_t bytes);
-   [[eosio::action]] void sellram (name account, int64_t bytes);
-   [[eosio::action]] void refund (name owner);
-   [[eosio::action]] void delegatebw (name from, name receiver, asset stake_net_quantity, asset stake_cpu_quantity, bool transfer);
-   [[eosio::action]] void undelegatebw (name from, name receiver, asset unstake_net_quantity, asset unstake_cpu_quantity);
+   [[eosio::action]]
+   void init(unsigned_int version, symbol core);
 
-   [[eosio::action]] void setram (uint64_t max_ram_size);
-   [[eosio::action]] void setramrate (uint16_t bytes_per_block);
-   [[eosio::action]] void setparams (const gxc::blockchain_parameters& params);
-   [[eosio::action]] void setpriv (name account, uint8_t is_priv);
-   [[eosio::action]] void updtrevision (uint8_t revision) {}
-   [[eosio::action]] void genaccount (name creator, name name, authority owner, authority active, std::string nickname);
+   [[eosio::action]]
+   void onblock(ignore<block_header> header);
+
+   [[eosio::action]]
+   void setalimits(name account, int64_t ram_bytes, int64_t net_weight, int64_t cpu_weight);
+
+   [[eosio::action]]
+   void buyram(name payer, name receiver, asset quant);
+
+   [[eosio::action]]
+   void buyrambytes (name payer, name receiver, uint32_t bytes);
+
+   [[eosio::action]]
+   void sellram (name account, int64_t bytes);
+
+   [[eosio::action]]
+   void refund (name owner);
+
+   [[eosio::action]]
+   void delegatebw (name from, name receiver, asset stake_net_quantity, asset stake_cpu_quantity, bool transfer);
+
+   [[eosio::action]]
+   void undelegatebw (name from, name receiver, asset unstake_net_quantity, asset unstake_cpu_quantity);
+
+   [[eosio::action]]
+   void setram(uint64_t max_ram_size);
+
+   [[eosio::action]]
+   void setramrate(uint16_t bytes_per_block);
+
+   [[eosio::action]]
+   void setparams(const gxc::blockchain_parameters& params);
+
+   [[eosio::action]]
+   void setpriv(name account, uint8_t is_priv);
+
+   [[eosio::action]]
+   void updtrevision(uint8_t revision) {}
+
+   [[eosio::action]]
+   void genaccount(name creator, name name, authority owner, authority active, std::string nickname);
 
    // native action handelrs
    [[eosio::action]]
-   void newaccount (name creator,
-                    name name,
-                    ignore<authority> owner,
-                    ignore<authority> active);
-   [[eosio::action]]
-   void updateauth (name account,
-                    name permission,
-                    ignore<name> parent,
-                    ignore<authority> auth) {}
+   void newaccount(name creator,
+                   name name,
+                   ignore<authority> owner,
+                   ignore<authority> active);
 
    [[eosio::action]]
-   void deleteauth (ignore<name> account,
-                    ignore<name> permission) {}
+   void updateauth(name account,
+                   name permission,
+                   ignore<name> parent,
+                   ignore<authority> auth) {}
 
    [[eosio::action]]
-   void linkauth (ignore<name> account,
-                  ignore<name> code,
-                  ignore<name> type,
-                  ignore<name> requirement) {}
+   void deleteauth(ignore<name> account,
+                   ignore<name> permission) {}
 
    [[eosio::action]]
-   void unlinkauth (ignore<name> account,
-                    ignore<name> code,
-                    ignore<name> type) {}
+   void linkauth(ignore<name> account,
+                 ignore<name> code,
+                 ignore<name> type,
+                 ignore<name> requirement) {}
 
    [[eosio::action]]
-   void canceldelay (ignore<permission_level> canceling_auth, ignore<capi_checksum256> trx_id) {}
+   void unlinkauth(ignore<name> account,
+                   ignore<name> code,
+                   ignore<name> type) {}
 
    [[eosio::action]]
-   void onerror (ignore<uint128_t> sender_id, ignore<std::vector<char>> sent_trx) {}
+   void canceldelay(ignore<permission_level> canceling_auth, ignore<capi_checksum256> trx_id) {}
 
    [[eosio::action]]
-   void setabi (name account, const std::vector<char>& abi);
+   void onerror(ignore<uint128_t> sender_id, ignore<std::vector<char>> sent_trx) {}
 
    [[eosio::action]]
-   void setcode (name account, uint8_t vmtype, uint8_t vmversion, const std::vector<char>& code);
+   void setabi(name account, const std::vector<char>& abi);
+
+   [[eosio::action]]
+   void setcode(name account, uint8_t vmtype, uint8_t vmversion, const std::vector<char>& code);
 
    struct [[eosio::table("abihash"), eosio::contract("gxc.system")]] abi_hash {
       name              owner;
       capi_checksum256  hash;
+
       uint64_t primary_key()const { return owner.value; }
 
       EOSLIB_SERIALIZE(abi_hash, (owner)(hash))
@@ -135,7 +165,7 @@ private:
    }
 
    static bool is_admin(const name& name) {
-      return (name == system::account) || has_dot(name);
+      return (name == system_account) || has_dot(name);
    }
 
    static gxc_global_state get_default_parameters();
@@ -149,4 +179,4 @@ private:
                   asset stake_net_quantity, asset stake_cpu_quantity, bool transfer );
 };
 
-} }
+}

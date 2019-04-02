@@ -6,7 +6,7 @@
 
 #include <cmath>
 
-namespace gxc { namespace system {
+namespace gxc {
 
 asset exchange_state::convert_to_exchange( connector& c, asset in ) {
    real_type R(supply.amount);
@@ -83,4 +83,4 @@ asset exchange_state::convert( asset from, const symbol& to ) {
    return from;
 }
 
-} }
+}

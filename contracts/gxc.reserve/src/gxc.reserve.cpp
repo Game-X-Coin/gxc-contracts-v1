@@ -6,8 +6,6 @@
 
 namespace gxc {
 
-using system::active_permission;
-
 void reserve::mint(extended_asset derivative, extended_asset underlying, std::vector<key_value> opts) {
    require_vauth(derivative.contract);
    require_gauth(derivative.contract);
@@ -38,12 +36,12 @@ void reserve::mint(extended_asset derivative, extended_asset underlying, std::ve
 
    // TODO: check allowance
    // deposit underlying asset to reserve
-   action(permission_level(_self, system::active_permission),
+   action(permission_level(_self, active_permission),
       token_account, "transfer"_n, std::make_tuple(basename(derivative.contract), _self, underlying, string("deposit in reserve"))
    ).send();
 
    // create derivative token
-   action(permission_level(token_account, system::active_permission),
+   action(permission_level(token_account, active_permission),
       token_account, "mint"_n, std::make_tuple(derivative, opts)
    ).send();
 }
@@ -82,7 +80,7 @@ void reserve::claim(name owner, extended_asset value) {
 
    action(
       {_self, active_permission}, token_account, "transfer"_n,
-      std::make_tuple(_self, owner, extended_asset(claimed_asset, system::account),  string("claim reserve"))
+      std::make_tuple(_self, owner, extended_asset(claimed_asset, system_account), string("claim reserve"))
    ).send();
 }
 
