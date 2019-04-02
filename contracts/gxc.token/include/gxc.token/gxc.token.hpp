@@ -18,6 +18,7 @@ using namespace eosio;
 namespace gxc {
 
    constexpr name active_permission {"active"_n};
+   constexpr uint64_t MASK_4BITS = 0xFull;
 
    class [[eosio::contract("gxc.token")]] token_contract : public contract {
    public:
@@ -67,59 +68,53 @@ namespace gxc {
       // dummy actions
       [[eosio::action]]
       void withdraw(name owner, extended_asset value) { require_auth(_self); }
-      typedef action_wrapper<"withdraw"_n, &token_contract::withdraw> event_withdraw;
+      typedef action_wrapper<"withdraw"_n, &token_contract::withdraw> withdraw_processed;
 
       [[eosio::action]]
       void revtwithdraw(name owner, extended_asset value) { require_auth(_self); }
-      typedef action_wrapper<"revtwithdraw"_n, &token_contract::revtwithdraw> event_revtwithdraw;
+      typedef action_wrapper<"revtwithdraw"_n, &token_contract::revtwithdraw> withdraw_reverted;
 
       // ACTION LIST END
 
-      static uint64_t get_id(const extended_asset& value) {
+      static uint64_t get_token_id(const extended_asset& value) {
          auto sym_code = extended_symbol_code(value.quantity.symbol, value.contract);
          return token_hash(reinterpret_cast<const char*>(&sym_code), sizeof(uint128_t));
       }
 
+      // To reduce ram usage, some fields in a row of multi-index table store more than one type of info.
+      // Do not access field with underscore suffix directly, but use accessor methods.
       struct [[eosio::table("accounts"), eosio::contract("gxc.token")]] account_balance {
+      public:
          asset     balance;  // 16
-         name      _issuer;  // 24, the lowest 4 bits assigned to opts
-         int64_t   _deposit; // 32
+      private:
+         name      issuer_;  // 24, the lowest 4 bits assigned to opts
+         int64_t   deposit_; // 32
 
+      public:
          enum opt {
             frozen = 0,
             whitelist
          };
 
-         name get_issuer()const {
-            return name(_issuer.value & 0xFFFFFFFFFFFFFFF0ULL);
-         }
+         name issuer()const { return name(issuer_.value & ~MASK_4BITS); }
+         void issuer(name account) { issuer_ = name((issuer_.value & MASK_4BITS) | account.value); }
 
-         void set_issuer(name issuer) {
-            _issuer = name((_issuer.value & 0xF) | issuer.value);
-         }
-
-         asset get_deposit()const {
-            return asset(_deposit, balance.symbol);
-         }
-
-         void set_deposit(const asset& quantity) {
+         asset deposit()const { return asset(deposit_, balance.symbol); }
+         void deposit(const asset& quantity) {
             check(quantity.symbol == balance.symbol, "symbol mismatch");
-            _deposit = quantity.amount;
+            deposit_ = quantity.amount;
          }
 
-         bool get_opt(opt option)const {
-            return (_issuer.value >> (0 + option)) & 0x1;
+         bool option(opt n)const { return (issuer_.value >> (0 + n)) & 0x1; }
+         void option(opt n, bool val) {
+            if (val) issuer_.value |= 0x1 << n;
+            else     issuer_.value &= ~(0x1 << n);
          }
 
-         void set_opt(opt option, bool val) {
-            if (val) _issuer.value |= 0x1 << option;
-            else     _issuer.value &= ~(0x1 << option);
-         }
+         uint64_t primary_key()const { return get_token_id(extended_asset(balance, issuer())); }
+         uint64_t by_issuer()const   { return issuer().value; }
 
-         uint64_t primary_key()const { return get_id(extended_asset(balance, get_issuer())); }
-         uint64_t by_issuer()const   { return get_issuer().value; }
-
-         EOSLIB_SERIALIZE( account_balance, (balance)(_issuer)(_deposit) )
+         EOSLIB_SERIALIZE(account_balance, (balance)(issuer_)(deposit_))
       };
 
       typedef multi_index<"accounts"_n, account_balance,
@@ -128,12 +123,18 @@ namespace gxc {
 
       struct [[eosio::table("stat"), eosio::contract("gxc.token")]] currency_stats {
          asset    supply;      // 16
-         int64_t  _max_supply; // 24
+      private:
+         int64_t  max_supply_; // 24
+      public:
          name     issuer;      // 32
-         uint32_t _opts = 0x7; // 36, defaults to (mintable, recallable, freezable)
+      private:
+         uint32_t opts_ = 0x7; // 36, defaults to (mintable, recallable, freezable)
+      public:
          uint32_t withdraw_delay_sec = 24 * 3600; // 40, defaults to 1 day
-         int64_t  _withdraw_min_amount; // 48
+      private:
+         int64_t  withdraw_min_amount_; // 48
 
+      public:
          enum opt {
             mintable = 0,
             recallable,
@@ -144,38 +145,29 @@ namespace gxc {
             whitelist_on
          };
 
-         asset get_max_supply()const {
-            return asset(_max_supply, supply.symbol);
-         }
-
-         void set_max_supply(const asset& quantity) {
+         asset max_supply()const { return asset(max_supply_, supply.symbol); }
+         void max_supply(const asset& quantity) {
             check(quantity.symbol == supply.symbol, "symbol mismatch");
-            _max_supply = quantity.amount;
+            max_supply_ = quantity.amount;
          }
 
-         bool get_opt(opt option)const {
-            return (_opts >> (0 + option)) & 0x1;
+         bool option(opt n)const { return (opts_ >> (0 + n)) & 0x1; }
+         void option(opt n, bool val) {
+            if (val) opts_ |= 0x1 << n;
+            else     opts_ &= ~(0x1 << n);
          }
 
-         void set_opt(opt option, bool val) {
-            if (val) _opts |= 0x1 << option;
-            else     _opts &= ~(0x1 << option);
-         }
-
-         asset get_withdraw_min_amount()const {
-            return asset(_withdraw_min_amount, supply.symbol);
-         }
-
-         void set_withdraw_min_amount(const asset& quantity) {
+         asset withdraw_min_amount()const { return asset(withdraw_min_amount_, supply.symbol); }
+         void withdraw_min_amount(const asset& quantity) {
             check(quantity.symbol == supply.symbol, "symbol mismatch");
             check(quantity.amount > 0, "withdraw_min_amount should be positive");
-            _withdraw_min_amount = quantity.amount;
+            withdraw_min_amount_ = quantity.amount;
          }
 
          uint64_t primary_key()const { return supply.symbol.code().raw(); }
 
-         EOSLIB_SERIALIZE( currency_stats, (supply)(_max_supply)(issuer)(_opts)
-                                           (withdraw_delay_sec)(_withdraw_min_amount) )
+         EOSLIB_SERIALIZE(currency_stats, (supply)(max_supply_)(issuer)(opts_)
+                                          (withdraw_delay_sec)(withdraw_min_amount_))
       };
 
       typedef multi_index<"stat"_n, currency_stats> stat;
@@ -187,10 +179,10 @@ namespace gxc {
 
          inline extended_asset value()const { return extended_asset(quantity, issuer); }
         
-         uint64_t primary_key()const       { return get_id(extended_asset(quantity, issuer)); }
+         uint64_t primary_key()const       { return get_token_id(extended_asset(quantity, issuer)); }
          uint64_t by_scheduled_time()const { return static_cast<uint64_t>(scheduled_time.utc_seconds); }
 
-         EOSLIB_SERIALIZE( withdrawal_request, (quantity)(issuer)(scheduled_time) )
+         EOSLIB_SERIALIZE(withdrawal_request, (quantity)(issuer)(scheduled_time))
       };
 
       typedef multi_index<"withdraws"_n, withdrawal_request,
@@ -202,7 +194,7 @@ namespace gxc {
          asset quantity; // 24
          name  issuer;   // 32
 
-         static uint64_t get_id(name spender, extended_asset value) {
+         static uint64_t get_approval_id(name spender, extended_asset value) {
             std::array<char,24> raw;
             auto sym_code = extended_symbol_code(value.quantity.symbol, value.contract).raw();
             datastream<char*> ds(raw.data(), raw.size());
@@ -213,9 +205,9 @@ namespace gxc {
 
          inline extended_asset value()const { return extended_asset(quantity, issuer); }
 
-         uint64_t primary_key()const { return get_id(spender, extended_asset(quantity, issuer)); }
+         uint64_t primary_key()const { return get_approval_id(spender, extended_asset(quantity, issuer)); }
 
-         EOSLIB_SERIALIZE( allowance, (spender)(quantity)(issuer) )
+         EOSLIB_SERIALIZE(allowance, (spender)(quantity)(issuer))
       };
 
       typedef multi_index<"allowance"_n, allowance> allowed;
@@ -242,16 +234,16 @@ namespace gxc {
       public:
          using opt = currency_stats::opt;
 
-         token(name receiver, name code, symbol_code symbol)
-         : multi_index_wrapper(receiver, code, symbol.raw())
+         token(name code, name scope, symbol_code symbol)
+         : multi_index_wrapper(code, scope, symbol.raw())
          {}
 
-         token(name receiver, name code, symbol symbol)
-         : token(receiver, code, symbol.code())
+         token(name code, name scope, symbol symbol)
+         : token(code, scope, symbol.code())
          {}
 
-         token(name receiver, extended_asset value)
-         : token(receiver, value.contract, value.quantity.symbol)
+         token(name code, extended_asset value)
+         : token(code, value.contract, value.quantity.symbol)
          {}
 
          void mint(extended_asset value, const std::vector<key_value>& opts);
@@ -266,8 +258,7 @@ namespace gxc {
 
          account get_account(name owner)const {
             check(exists(), "token not found");
-            auto _account = account(code(), owner, get_id(extended_asset(asset(0, _this->supply.symbol), _this->issuer)), *this);           
-            return _account;
+            return account(code(), owner, get_token_id(extended_asset(asset(0, _this->supply.symbol), _this->issuer)), *this);           
          }
 
          inline name issuer()const { return scope(); }
@@ -280,15 +271,15 @@ namespace gxc {
       public:
          using opt = account_balance::opt;
 
-         account(name receiver, name code, uint64_t key, const token& st)
-         : multi_index_wrapper(receiver, code, key)
+         account(name code, name scope, uint64_t key, const token& st)
+         : multi_index_wrapper(code, scope, key)
          , _st(st)
          {}
 
          void check_account_is_valid() {
             if (code() != owner()) {
-               check(!_this->get_opt(opt::frozen), "account is frozen");
-               check(!_st->get_opt(token::opt::whitelist_on) || _this->get_opt(opt::whitelist), "account is not whitelisted");
+               check(!_this->option(opt::frozen), "account is frozen");
+               check(!_st->option(token::opt::whitelist_on) || _this->option(opt::whitelist), "not whitelisted account");
             }
          }
 
@@ -336,8 +327,8 @@ namespace gxc {
       public:
          using multi_index_wrapper::multi_index_wrapper;
 
-         requests(name receiver, name code, extended_asset value)
-         : multi_index_wrapper(receiver, code, get_id(value))
+         requests(name code, name scope, extended_asset value)
+         : multi_index_wrapper(code, scope, get_token_id(value))
          {}
 
          void refresh_schedule(time_point_sec base_time = current_time_point());
