@@ -39,4 +39,28 @@ asset get_balance(name owner, name issuer, symbol_code sym_code) {
    return balance;
 }
 
+struct token_contract_mock {
+   token_contract_mock(std::vector<permission_level> permission)
+   : permission(permission) {}
+
+   using key_value = std::pair<std::string, std::vector<int8_t>>;
+
+   void mint(extended_asset value, std::vector<key_value> opts) {
+      action_wrapper<"mint"_n, &token_contract_mock::mint>(std::move(name(token_account)), permission)
+      .send(value, opts);
+   }
+
+   void transfer(name from, name to, extended_asset value, std::string memo) {
+      action_wrapper<"transfer"_n, &token_contract_mock::transfer>(std::move(name(token_account)), permission)
+      .send(from, to, value, memo);
+   }
+
+   void burn(extended_asset value, std::string memo) {
+      action_wrapper<"burn"_n, &token_contract_mock::burn>(std::move(name(token_account)), permission)
+      .send(value, memo);
+   }
+
+   std::vector<permission_level> permission;
+};
+
 }

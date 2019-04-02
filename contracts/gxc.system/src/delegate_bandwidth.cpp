@@ -17,6 +17,8 @@
 #include <cmath>
 #include <map>
 
+using token_contract = gxc::token_contract_mock;
+
 namespace gxc {
 
 using eosio::asset; using eosio::indexed_by; using eosio::const_mem_fun; using eosio::print; using eosio::permission_level;
@@ -114,14 +116,12 @@ void system_contract::buyram( name payer, name receiver, asset quant ) {
    // quant_after_fee.amount should be > 0 if quant.amount > 1.
    // If quant.amount == 1, then quant_after_fee.amount == 0 and the next inline transfer will fail causing the buyram action to fail.
 
-   action({ {payer, active_permission}, {ram_account, active_permission} },
-      token_account, "transfer"_n, std::make_tuple(payer, ram_account, quant_after_fee, std::string("buy ram"), system_account)
-   ).send();
+   token_contract({{payer, active_permission}, {ram_account, active_permission}})
+   .transfer(payer, ram_account, extended_asset(quant_after_fee, _self), "buy ram");
 
    if( fee.amount > 0 ) {
-      action({ {payer, active_permission} },
-         token_account, "transfer"_n, std::make_tuple(payer, ramfee_account, fee, std::string("ram fee"), system_account)
-      ).send();
+      token_contract({{payer, active_permission}})
+      .transfer(payer, ramfee_account, extended_asset(fee, _self), "ram fee");
    }
 
    int64_t bytes_out;
@@ -192,16 +192,14 @@ void system_contract::sellram( name account, int64_t bytes ) {
    });
    eosio::set_resource_limits( res_itr->owner, res_itr->ram_bytes + ram_gift_bytes, res_itr->net_weight.amount, res_itr->cpu_weight.amount );
 
-   action({ {ram_account, active_permission}, {account, active_permission} },
-      token_account, "transfer"_n, std::make_tuple(ram_account, account, asset(tokens_out), std::string("sell ram"), system_account)
-   ).send();
+   token_contract({{ram_account, active_permission}, {account, active_permission}})
+   .transfer(ram_account, account, extended_asset(tokens_out, _self), "sell ram");
 
    auto fee = ( tokens_out.amount + 199 ) / 200; /// .5% fee (round up)
    // since tokens_out.amount was asserted to be at least 2 earlier, fee.amount < tokens_out.amount
    if( fee > 0 ) {
-      action({ {account, active_permission} },
-         token_account, "transfer"_n, std::make_tuple(account, ramfee_account, asset(fee, core_symbol()), std::string("sell ram fee"), system_account)
-      ).send();
+      token_contract({{account, active_permission}})
+      .transfer(account, ramfee_account, extended_asset(asset(fee, core_symbol()), _self), "sell ram fee");
    }
 }
 
@@ -355,9 +353,8 @@ void system_contract::changebw( name from, name receiver,
 
       auto transfer_amount = net_balance + cpu_balance;
       if ( 0 < transfer_amount.amount ) {
-         action({ {source_stake_from, active_permission} },
-            token_account, "transfer"_n, std::make_tuple(source_stake_from, stake_account, asset(transfer_amount), std::string("stake bandwidth"), system_account)
-         ).send();
+         token_contract({{source_stake_from, active_permission}})
+         .transfer(source_stake_from, stake_account, extended_asset(transfer_amount, _self), "stake bandwidth");
       }
    }
 }
@@ -402,9 +399,8 @@ void system_contract::refund( const name owner ) {
    check( req->request_time + seconds(refund_delay_sec) <= current_time_point(),
                  "refund is not available yet" );
 
-   action({ {stake_account, active_permission}, {req->owner, active_permission} },
-      token_account, "transfer"_n, std::make_tuple(stake_account, req->owner, req->net_amount + req->cpu_amount, std::string("unstake"), system_account)
-   ).send();
+   token_contract({{stake_account, active_permission}, {req->owner, active_permission}})
+   .transfer(stake_account, req->owner, extended_asset(req->net_amount + req->cpu_amount, _self), "unstake");
 
    refunds_tbl.erase( req );
 }

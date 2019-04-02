@@ -3,6 +3,9 @@
  * @copyright defined in gxc/LICENSE
  */
 #include <gxc.reserve/gxc.reserve.hpp>
+#include <gxclib/token.hpp>
+
+using token_contract = gxc::token_contract_mock;
 
 namespace gxc {
 
@@ -36,14 +39,10 @@ void reserve::mint(extended_asset derivative, extended_asset underlying, std::ve
 
    // TODO: check allowance
    // deposit underlying asset to reserve
-   action(permission_level(_self, active_permission),
-      token_account, "transfer"_n, std::make_tuple(basename(derivative.contract), _self, underlying, string("deposit in reserve"))
-   ).send();
+   token_contract({{_self, active_permission}}).transfer(basename(derivative.contract), _self, underlying, "deposit in reserve");
 
    // create derivative token
-   action(permission_level(token_account, active_permission),
-      token_account, "mint"_n, std::make_tuple(derivative, opts)
-   ).send();
+   token_contract({{token_account, active_permission}}).mint(derivative, opts);
 }
 
 void reserve::claim(name owner, extended_asset value) {
@@ -66,22 +65,10 @@ void reserve::claim(name owner, extended_asset value) {
    value.quantity.amount = static_cast<int64_t>(get_float_amount(claimed_asset) / ratio * pow(10, it.derivative.symbol.precision()));
 
    // transfer token
-   action(
-      {_self, active_permission}, token_account, "transfer"_n, std::make_tuple(owner, _self, value, string("claim reserve"))
-   ).send();
-
-   action(
-      {_self, active_permission}, token_account, "transfer"_n, std::make_tuple(_self, basename(value.contract), value, string("claim reserve"))
-   ).send();
-
-   action(
-      {token_account, active_permission}, token_account, "burn"_n, std::make_tuple(value, string("claim reserve"))
-   ).send();
-
-   action(
-      {_self, active_permission}, token_account, "transfer"_n,
-      std::make_tuple(_self, owner, extended_asset(claimed_asset, system_account), string("claim reserve"))
-   ).send();
+   token_contract({{_self, active_permission}}).transfer(owner, _self, value, "claim reserve");
+   token_contract({{_self, active_permission}}).transfer(_self, basename(value.contract), value, "claim reserve");
+   token_contract({{token_account, active_permission}}).burn(value, "claim reserve");
+   token_contract({{_self, active_permission}}).transfer(_self, owner, extended_asset(claimed_asset, system_account), "claim reserve");
 }
 
 } /// namespace gxc
