@@ -36,36 +36,34 @@ namespace gxc {
    void token_contract::token::_setopts(const std::vector<key_value>& opts, bool init) {
       modify(same_payer, [&](auto& t) {
          for (auto o : opts) {
-            if (o.first == "paused") {
+            if (o.first == "paused")
                t.option(opt::paused, unpack<bool>(o.second));
-            } else if (o.first == "whitelist_on") {
+            else if (o.first == "whitelist_on")
                t.option(opt::whitelist_on, unpack<bool>(o.second));
-            } else if (o.first == "mintable") {
+            else {
+               // Below options can be configured only when creating token.
                check(init, "not allowed to change the option `" + o.first + "`");
-               t.option(opt::mintable, unpack<bool>(o.second));
-            } else if (o.first == "recallable") {
-               check(init, "not allowed to change the option `" + o.first + "`");
-               t.option(opt::recallable, unpack<bool>(o.second));
-            } else if (o.first == "freezable") {
-               check(init, "not allowed to change the option `" + o.first + "`");
-               t.option(opt::freezable, unpack<bool>(o.second));
-            } else if (o.first == "pausable") {
-               check(init, "not allowed to change the option `" + o.first + "`");
-               t.option(opt::pausable, unpack<bool>(o.second));
-            } else if (o.first == "whitelistable") {
-               check(init, "not allowed to change the option `" + o.first + "`");
-               t.option(opt::whitelistable, unpack<bool>(o.second));
-            } else if (o.first == "withdraw_min_amount") {
-               check(init, "not allowed to change the option `" + o.first + "`");
-               auto value = unpack<int64_t>(o.second);
-               check(value >= 0, "withdraw_min_amount should be positive");
-               t.withdraw_min_amount(asset(value, t.supply.symbol));
-            } else if (o.first == "withdraw_delay_sec") {
-               check(init, "not allowed to change the option `" + o.first + "`");
-               auto value = unpack<uint64_t>(o.second);
-               t.withdraw_delay_sec = static_cast<uint32_t>(value);
-            } else {
-               check(false, "unknown option `" + o.first + "`");
+
+               if (o.first == "mintable") {
+                  t.option(opt::mintable, unpack<bool>(o.second));
+               } else if (o.first == "recallable") {
+                  t.option(opt::recallable, unpack<bool>(o.second));
+               } else if (o.first == "freezable") {
+                  t.option(opt::freezable, unpack<bool>(o.second));
+               } else if (o.first == "pausable") {
+                  t.option(opt::pausable, unpack<bool>(o.second));
+               } else if (o.first == "whitelistable") {
+                  t.option(opt::whitelistable, unpack<bool>(o.second));
+               } else if (o.first == "withdraw_min_amount") {
+                  auto value = unpack<int64_t>(o.second);
+                  check(value >= 0, "withdraw_min_amount should be positive");
+                  t.withdraw_min_amount(asset(value, t.supply.symbol));
+               } else if (o.first == "withdraw_delay_sec") {
+                  auto value = unpack<uint64_t>(o.second);
+                  t.withdraw_delay_sec = static_cast<uint32_t>(value);
+               } else {
+                  check(false, "unknown option `" + o.first + "`");
+               }
             }
          }
       });
