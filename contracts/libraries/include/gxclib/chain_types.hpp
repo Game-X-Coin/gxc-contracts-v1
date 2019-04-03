@@ -9,7 +9,7 @@
 
 #include "types.hpp"
 
-namespace eosio { namespace chain {
+namespace eosio {
 
 struct permission_level_weight {
    permission_level  permission;
@@ -33,10 +33,19 @@ struct wait_weight {
 };
 
 struct authority {
+   authority( uint32_t t = 1, std::vector<key_weight> k = {}, std::vector<permission_level_weight> p = {}, std::vector<wait_weight> w = {} )
+   : threshold(t),keys(move(k)),accounts(move(p)),waits(move(w))
+   {}
+
    uint32_t                              threshold = 0;
    std::vector<key_weight>               keys;
    std::vector<permission_level_weight>  accounts;
    std::vector<wait_weight>              waits;
+
+   authority& add_account(name auth, name permission = "active"_n) {
+      this->accounts.push_back({{auth, permission}, 1});
+      return *this;
+   }
 
    EOSLIB_SERIALIZE(authority, (threshold)(keys)(accounts)(waits))
 };
@@ -64,4 +73,4 @@ struct newaccount {
    EOSLIB_SERIALIZE(newaccount, (creator)(name)(owner)(active))
 };
 
-} }
+}
