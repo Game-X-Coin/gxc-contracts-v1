@@ -75,7 +75,7 @@ public:
    [[eosio::action]] void updtrevision (uint8_t revision) {}
    [[eosio::action]] void genaccount (name creator, name name, authority owner, authority active, std::string nickname);
 
-   // native action handelrs
+   // native action handlers
    [[eosio::action]]
    void newaccount (name creator,
                     name name,
