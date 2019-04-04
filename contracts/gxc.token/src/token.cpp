@@ -233,16 +233,15 @@ namespace gxc {
       check(value.quantity >= _this->get_withdraw_min_amount(), "withdraw amount is too small");
 
       auto _req = requests(code(), owner, value);
-      auto ctp = current_time_point();
 
       if (_req) {
          _req.modify(same_payer, [&](auto& rq) {
-            rq.scheduled_time = ctp + seconds(_this->withdraw_delay_sec);
+            rq.scheduled_time = current_time_point() + seconds(_this->withdraw_delay_sec);
             rq.quantity += value.quantity;
          });
       } else {
          _req.emplace(owner, [&](auto& rq) {
-            rq.scheduled_time = ctp + seconds(_this->withdraw_delay_sec);
+            rq.scheduled_time = current_time_point() + seconds(_this->withdraw_delay_sec);
             rq.quantity       = value.quantity;
             rq.issuer         = value.contract;
          });
@@ -251,7 +250,7 @@ namespace gxc {
       get_account(owner).keep().sub_deposit(value);
       get_account(code()).paid_by(code()).add_balance(value);
 
-      _req.refresh_schedule(ctp + seconds(_this->withdraw_delay_sec));
+      _req.refresh_schedule();
    }
 
    void token_contract::token::cancel_withdraw(name owner, name issuer, symbol_code sym) {

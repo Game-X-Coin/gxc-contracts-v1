@@ -340,7 +340,7 @@ namespace gxc {
          : multi_index_wrapper(receiver, code, get_id(value))
          {}
 
-         void refresh_schedule(time_point_sec base_time = current_time_point());
+         void refresh_schedule();
          void clear();
 
          inline name owner()const  { return scope(); }

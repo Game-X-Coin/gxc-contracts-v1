@@ -7,27 +7,17 @@
 
 namespace gxc {
 
-   void token_contract::requests::refresh_schedule(time_point_sec base_time) {
+   void token_contract::requests::refresh_schedule() {
       auto _idx = get_index<"schedtime"_n>();
       auto _it = _idx.begin();
+
+      cancel_deferred(owner().value);
 
       if (_it != _idx.end()) {
          transaction out;
          out.actions.emplace_back(action{{owner(), active_permission}, code(), "clrwithdraws"_n, owner()});
-
-         auto withdraw_delay_sec = token(code(), _it->issuer, _it->quantity.symbol)->withdraw_delay_sec;
-
-         if (_it->scheduled_time == base_time) {
-            out.delay_sec = withdraw_delay_sec;
-         } else {
-            auto timeleft = _it->scheduled_time - base_time;
-            out.delay_sec = static_cast<uint32_t>(timeleft.to_seconds());
-         }
-
-         cancel_deferred(owner().value);
+         out.delay_sec = static_cast<uint32_t>((_it->scheduled_time - current_time_point()).to_seconds());
          out.send(owner().value, owner(), true);
-      } else {
-         cancel_deferred(owner().value);
       }
    }
 
