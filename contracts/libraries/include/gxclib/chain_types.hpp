@@ -33,18 +33,18 @@ struct wait_weight {
 };
 
 struct authority {
-   authority( uint32_t t = 1, std::vector<key_weight> k = {}, std::vector<permission_level_weight> p = {}, std::vector<wait_weight> w = {} )
-   : threshold(t),keys(move(k)),accounts(move(p)),waits(move(w))
-   {}
-
-   uint32_t                              threshold = 0;
+   uint32_t                              threshold = 1;
    std::vector<key_weight>               keys;
    std::vector<permission_level_weight>  accounts;
    std::vector<wait_weight>              waits;
 
    authority& add_account(name auth, name permission = "active"_n) {
-      this->accounts.push_back({{auth, permission}, 1});
+      accounts.push_back({{auth, permission}, 1});
       return *this;
+   }
+
+   authority& add_code(name auth) {
+      return add_account(auth, "gxc.code"_n);
    }
 
    EOSLIB_SERIALIZE(authority, (threshold)(keys)(accounts)(waits))

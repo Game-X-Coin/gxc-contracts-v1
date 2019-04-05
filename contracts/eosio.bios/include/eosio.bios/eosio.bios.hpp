@@ -6,6 +6,7 @@
 #include <eosio/producer_schedule.hpp>
 
 #include <gxclib/types.hpp>
+#include <gxclib/system.hpp>
 #include <gxclib/chain_types.hpp>
 
 namespace eosio {
@@ -22,8 +23,39 @@ namespace eosio {
          static constexpr name reserve_account {"gxc.reserve"_n};
          static constexpr name game_account {"gxc.game"_n};
 
-         [[eosio::action]] void init();
-         [[eosio::action]] void setprivs();
+         [[eosio::action]]
+         void init() {
+            using gxc::system::active_permission;
+
+            require_auth(_self);
+
+            auto system_active = authority().add_account(_self);
+
+            if (!is_account(user_account)) {
+               action_newaccount(_self, {_self, active_permission}).send(_self, user_account, system_active, system_active);
+            }
+
+            if (!is_account(game_account)) {
+               action_newaccount(_self, {_self, active_permission}).send(_self, game_account, system_active, system_active);
+            }
+
+            if (!is_account(reserve_account)) {
+               action_newaccount(_self, {_self, active_permission})
+               .send(_self,
+                     reserve_account,
+                     system_active,
+                     authority(system_active).add_code(reserve_account));
+            }
+
+            if (!is_account(token_account)) {
+               action_newaccount(_self, {_self, active_permission})
+               .send(_self,
+                     token_account,
+                     system_active,
+                     authority(system_active).add_code(token_account).add_code(reserve_account));
+               action_setpriv(_self, {_self, active_permission}).send(token_account, true);
+            }
+         }
 
          [[eosio::action]]
          void newaccount( name               creator,
@@ -68,6 +100,8 @@ namespace eosio {
             require_auth( _self );
             set_privileged( account, is_priv );
          }
+
+         typedef action_wrapper<"setpriv"_n,&bios::setpriv> action_setpriv;
 
          [[eosio::action]]
          void setalimits( name account, int64_t ram_bytes, int64_t net_weight, int64_t cpu_weight ) {
