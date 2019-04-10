@@ -121,37 +121,30 @@ void contract::init(unsigned_int version, symbol core) {
       m.quote.balance.symbol = core;
    });
 
-   auto owner = chain::authority {
-      .threshold = 1,
-      .keys = {},
-      .accounts = {{{_self, active_permission}, 1}},
-      .waits = {}
-   };
-
-   auto active = chain::authority {
-      .threshold = 1,
-      .keys = {},
-      .accounts = {{{_self, active_permission}, 1}},
-      .waits = {}
-   };
-
-   auto newact = [&](name acnt) -> chain::newaccount {
-      return {
-         .creator = _self,
-         .name = acnt,
-         .owner = owner,
-         .active = active
-      };
-   };
+   auto system_active = authority().add_account(_self);
 
    if (!is_account(ram_account)) {
-      action({{_self, active_permission}}, _self, "newaccount"_n, newact(ram_account)).send();
+      action_newaccount(_self, {{_self, active_permission}})
+      .send(_self,
+            ram_account,
+            system_active,
+            system_active);
    }
+
    if (!is_account(ramfee_account)) {
-      action({{_self, active_permission}}, _self, "newaccount"_n, newact(ramfee_account)).send();
+      action_newaccount(_self, {{_self, active_permission}})
+      .send(_self,
+            ramfee_account,
+            system_active,
+            system_active);
    }
+
    if (!is_account(stake_account)) {
-      action({{_self, active_permission}}, _self, "newaccount"_n, newact(stake_account)).send();
+      action_newaccount(_self, {{_self, active_permission}})
+      .send(_self,
+            stake_account,
+            system_active,
+            system_active);
    }
 }
 
@@ -159,9 +152,7 @@ void contract::genaccount(name creator, name name, authority owner, authority ac
    require_auth(creator);
 
    action({{_self, active_permission}}, user_account, "setnick"_n, std::make_tuple(name, nickname)).send();
-   action({{creator, active_permission}, {_self, active_permission}}, _self, "newaccount"_n,
-      std::make_tuple(creator, name, owner, active)
-   ).send();
+   action_newaccount(_self, {{creator, active_permission},{_self, active_permission}}).send(creator, name, owner, active);
 }
 
 } }
