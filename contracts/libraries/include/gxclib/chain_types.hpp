@@ -6,7 +6,6 @@
 
 #include <eosio/eosio.hpp>
 #include <eosio/producer_schedule.hpp>
-
 #include "types.hpp"
 
 namespace eosio {
@@ -38,8 +37,16 @@ struct authority {
    std::vector<permission_level_weight>  accounts;
    std::vector<wait_weight>              waits;
 
-   authority& add_account(name auth, name permission = "active"_n) {
-      accounts.push_back({{auth, permission}, 1});
+   authority& add_account(name auth, name _permission = "active"_n) {
+      auto p = permission_level_weight{{auth, _permission}, 1};
+
+      for (auto a = accounts.begin(); a != accounts.end(); a++) {
+         if(a->permission.actor > auth) {
+            accounts.insert(a,p);
+            return *this;
+         }
+      }
+      accounts.push_back(p);
       return *this;
    }
 
@@ -62,15 +69,6 @@ struct block_header {
 
    EOSLIB_SERIALIZE(block_header, (timestamp)(producer)(confirmed)(previous)(transaction_mroot)(action_mroot)
                                   (schedule_version)(new_producers))
-};
-
-struct newaccount {
-   name creator;
-   name name;
-   authority owner;
-   authority active;
-
-   EOSLIB_SERIALIZE(newaccount, (creator)(name)(owner)(active))
 };
 
 }

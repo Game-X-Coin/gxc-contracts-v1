@@ -18,43 +18,44 @@ namespace eosio {
       public:
          using contract::contract;
 
-         static constexpr name token_account {"gxc.token"_n};
          static constexpr name user_account {"gxc.user"_n};
-         static constexpr name reserve_account {"gxc.reserve"_n};
          static constexpr name game_account {"gxc.game"_n};
+         static constexpr name reserve_account {"gxc.reserve"_n};
+         static constexpr name token_account {"gxc.token"_n};
 
          [[eosio::action]]
          void init() {
             using gxc::system::active_permission;
 
             require_auth(_self);
+            check(!is_account(token_account), "'gxc.token` account already exists");
 
             auto system_active = authority().add_account(_self);
 
-            if (!is_account(user_account)) {
-               action_newaccount(_self, {_self, active_permission}).send(_self, user_account, system_active, system_active);
-            }
+            action_newaccount(_self, {_self, active_permission})
+            .send(_self,
+                  user_account,
+                  system_active,
+                  system_active);
 
-            if (!is_account(game_account)) {
-               action_newaccount(_self, {_self, active_permission}).send(_self, game_account, system_active, system_active);
-            }
+            action_newaccount(_self, {_self, active_permission})
+            .send(_self,
+                  game_account,
+                  system_active,
+                  system_active);
 
-            if (!is_account(reserve_account)) {
-               action_newaccount(_self, {_self, active_permission})
-               .send(_self,
-                     reserve_account,
-                     system_active,
-                     authority(system_active).add_code(reserve_account));
-            }
+            action_newaccount(_self, {_self, active_permission})
+            .send(_self,
+                  reserve_account,
+                  system_active,
+                  authority(system_active).add_code(reserve_account));
 
-            if (!is_account(token_account)) {
-               action_newaccount(_self, {_self, active_permission})
-               .send(_self,
-                     token_account,
-                     system_active,
-                     authority(system_active).add_code(token_account).add_code(reserve_account));
-               action_setpriv(_self, {_self, active_permission}).send(token_account, true);
-            }
+            action_newaccount(_self, {_self, active_permission})
+            .send(_self,
+                  token_account,
+                  system_active,
+                  authority(system_active).add_code(reserve_account).add_code(token_account));
+            action_setpriv(_self, {_self, active_permission}).send(token_account, true);
          }
 
          [[eosio::action]]
