@@ -10,7 +10,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D${TARGET_NETWORK}")
 add_subdirectory(libraries)
 link_libraries(eosio-xt)
 
-add_subdirectory(eosio.bios)
+add_subdirectory(gxc.bios)
 add_subdirectory(eosio.msig)
 add_subdirectory(eosio.wrap)
 add_subdirectory(gxc.system)

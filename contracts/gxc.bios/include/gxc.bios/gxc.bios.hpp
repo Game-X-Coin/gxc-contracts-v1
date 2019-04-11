@@ -1,4 +1,9 @@
+/**
+ *  @file
+ *  @copyright defined in gxc/LICENSE
+ */
 #pragma once
+
 #include <eosio/action.hpp>
 #include <eosio/crypto.hpp>
 #include <eosio/eosio.hpp>
@@ -6,70 +11,68 @@
 #include <eosio/producer_schedule.hpp>
 
 #include <gxclib/types.hpp>
+#include <gxclib/system.hpp>
+#include <gxclib/chain_types.hpp>
 
-namespace eosio {
+using namespace eosio;
+
+namespace gxc {
+
    using eosio::permission_level;
    using eosio::public_key;
    using eosio::ignore;
 
-   struct permission_level_weight {
-      permission_level  permission;
-      uint16_t          weight;
-
-      // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( permission_level_weight, (permission)(weight) )
-   };
-
-   struct key_weight {
-      eosio::public_key  key;
-      uint16_t           weight;
-
-      // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( key_weight, (key)(weight) )
-   };
-
-   struct wait_weight {
-      uint32_t           wait_sec;
-      uint16_t           weight;
-
-      // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( wait_weight, (wait_sec)(weight) )
-   };
-
-   struct authority {
-      uint32_t                              threshold = 0;
-      std::vector<key_weight>               keys;
-      std::vector<permission_level_weight>  accounts;
-      std::vector<wait_weight>              waits;
-
-      // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( authority, (threshold)(keys)(accounts)(waits) )
-   };
-
-   struct block_header {
-      uint32_t                                  timestamp;
-      name                                      producer;
-      uint16_t                                  confirmed = 0;
-      capi_checksum256                          previous;
-      capi_checksum256                          transaction_mroot;
-      capi_checksum256                          action_mroot;
-      uint32_t                                  schedule_version = 0;
-      std::optional<eosio::producer_schedule>   new_producers;
-
-      // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE(block_header, (timestamp)(producer)(confirmed)(previous)(transaction_mroot)(action_mroot)
-                                     (schedule_version)(new_producers))
-   };
-
-   class [[eosio::contract("eosio.bios")]] bios : public contract {
+   class [[eosio::contract("gxc.bios")]] bios : public contract {
       public:
          using contract::contract;
-         [[eosio::action]]
-         void newaccount( name             creator,
-                          name             name,
-                          ignore<authority> owner,
-                          ignore<authority> active){}
 
+         static constexpr name user_account {"gxc.user"_n};
+         static constexpr name game_account {"gxc.game"_n};
+         static constexpr name reserve_account {"gxc.reserve"_n};
+         static constexpr name token_account {"gxc.token"_n};
+
+         [[eosio::action]]
+         void init() {
+            using gxc::system::active_permission;
+
+            require_auth( _self );
+            check(!is_account(token_account), "bios contract has already been initialized");
+
+            auto system_active = authority().add_account(_self);
+
+            action_newaccount(_self, {_self, active_permission})
+            .send(_self,
+                  user_account,
+                  system_active,
+                  system_active);
+
+            action_newaccount(_self, {_self, active_permission})
+            .send(_self,
+                  game_account,
+                  system_active,
+                  system_active);
+
+            action_newaccount(_self, {_self, active_permission})
+            .send(_self,
+                  reserve_account,
+                  system_active,
+                  authority(system_active).add_code(reserve_account));
+
+            action_newaccount(_self, {_self, active_permission})
+            .send(_self,
+                  token_account,
+                  system_active,
+                  authority(system_active).add_code(reserve_account).add_code(token_account));
+            action_setpriv(_self, {_self, active_permission}).send(token_account, true);
+         }
+
+         [[eosio::action]]
+         void newaccount( name               creator,
+                          name               name,
+                          ignore<authority>  owner,
+                          ignore<authority>  active ) {}
+
+         typedef action_wrapper<"newaccount"_n, &bios::newaccount> action_newaccount;
 
          [[eosio::action]]
          void updateauth(  ignore<name>  account,
@@ -106,6 +109,8 @@ namespace eosio {
             require_auth( _self );
             set_privileged( account, is_priv );
          }
+
+         typedef action_wrapper<"setpriv"_n,&bios::setpriv> action_setpriv;
 
          [[eosio::action]]
          void setalimits( name account, int64_t ram_bytes, int64_t net_weight, int64_t cpu_weight ) {
@@ -166,4 +171,4 @@ namespace eosio {
          typedef eosio::multi_index< "abihash"_n, abi_hash > abi_hash_table;
    };
 
-} /// namespace eosio
+} /// namespace gxc
