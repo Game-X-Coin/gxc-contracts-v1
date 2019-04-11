@@ -33,7 +33,7 @@ namespace gxc {
 
          [[eosio::action]]
          void init() {
-            using gxc::system::active_permission;
+            using gxc::active_permission;
 
             require_auth( _self );
             check(!is_account(token_account), "bios contract has already been initialized");

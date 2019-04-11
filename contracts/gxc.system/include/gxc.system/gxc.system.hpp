@@ -108,7 +108,7 @@ public:
                    ignore<authority> owner,
                    ignore<authority> active);
 
-   typedef action_wrapper<"newaccount"_n, &contract::newaccount> action_newaccount;
+   typedef action_wrapper<"newaccount"_n, &system_contract::newaccount> action_newaccount;
 
    [[eosio::action]]
    void updateauth(name account,
