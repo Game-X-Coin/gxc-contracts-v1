@@ -5,7 +5,6 @@
 #pragma once
 
 #include <eosio/eosio.hpp>
-#include <eosio/system.hpp>
 #include <eosio/time.hpp>
 #include <eosio/singleton.hpp>
 #include <gxclib/dispatcher.hpp>
@@ -16,7 +15,6 @@
 #include <gxclib/privileged.hpp>
 
 using namespace eosio;
-using namespace eosio::chain;
 
 namespace gxc {
 
@@ -109,6 +107,8 @@ public:
                    name name,
                    ignore<authority> owner,
                    ignore<authority> active);
+
+   typedef action_wrapper<"newaccount"_n, &contract::newaccount> action_newaccount;
 
    [[eosio::action]]
    void updateauth(name account,
