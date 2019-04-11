@@ -1,4 +1,9 @@
+/**
+ *  @file
+ *  @copyright defined in gxc/LICENSE
+ */
 #pragma once
+
 #include <eosio/action.hpp>
 #include <eosio/crypto.hpp>
 #include <eosio/eosio.hpp>
@@ -9,12 +14,15 @@
 #include <gxclib/system.hpp>
 #include <gxclib/chain_types.hpp>
 
-namespace eosio {
+using namespace eosio;
+
+namespace gxc {
+
    using eosio::permission_level;
    using eosio::public_key;
    using eosio::ignore;
 
-   class [[eosio::contract("eosio.bios")]] bios : public contract {
+   class [[eosio::contract("gxc.bios")]] bios : public contract {
       public:
          using contract::contract;
 
@@ -27,8 +35,8 @@ namespace eosio {
          void init() {
             using gxc::system::active_permission;
 
-            require_auth(_self);
-            check(!is_account(token_account), "'gxc.token` account already exists");
+            require_auth( _self );
+            check(!is_account(token_account), "bios contract has already been initialized");
 
             auto system_active = authority().add_account(_self);
 
@@ -163,4 +171,4 @@ namespace eosio {
          typedef eosio::multi_index< "abihash"_n, abi_hash > abi_hash_table;
    };
 
-} /// namespace eosio
+} /// namespace gxc

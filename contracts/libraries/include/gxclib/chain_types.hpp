@@ -10,6 +10,10 @@
 
 namespace eosio {
 
+inline bool operator< (const permission_level& lhs, const permission_level& rhs) {
+   return std::tie(lhs.actor, lhs.permission) < std::tie(rhs.actor, rhs.permission);
+}
+
 struct permission_level_weight {
    permission_level  permission;
    uint16_t          weight;
@@ -40,13 +44,10 @@ struct authority {
    authority& add_account(name auth, name _permission = "active"_n) {
       auto p = permission_level_weight{{auth, _permission}, 1};
 
-      for (auto a = accounts.begin(); a != accounts.end(); a++) {
-         if(a->permission.actor > auth) {
-            accounts.insert(a,p);
-            return *this;
-         }
-      }
-      accounts.push_back(p);
+      auto itr = std::lower_bound(accounts.begin(), accounts.end(), p, [](const auto& e, const auto& v) {
+            return e.permission < v.permission;
+            });
+      accounts.insert(itr, p);
       return *this;
    }
 

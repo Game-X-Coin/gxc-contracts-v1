@@ -8,7 +8,7 @@ find_package(eosio.cdt)
 add_subdirectory(libraries)
 link_libraries(eosio-xt)
 
-add_subdirectory(eosio.bios)
+add_subdirectory(gxc.bios)
 add_subdirectory(eosio.msig)
 add_subdirectory(eosio.wrap)
 add_subdirectory(gxc.system)

@@ -1,6 +1,6 @@
 # gxc.bios
 
-system contract that performs a special action.
+bios contract that performs required actions in boot step.
 
 ## Actions
 
@@ -10,7 +10,7 @@ system contract that performs a special action.
 void init();
 ```
 
-action to create the necessary users
+action to create the necessary accounts.
 
 **Available Accounts**
 
@@ -20,6 +20,6 @@ action to create the necessary users
 |gxc.game||`gxc@active`|`gxc@active`|
 |gxc.reserve||`gxc@active`|`gxc@active`|
 ||||`gxc.reserve@gxc.code`|
-|gxc.token| privileged: true|`gxc@active`|`gxc@active`|
+|gxc.token|privileged: true|`gxc@active`|`gxc@active`|
 ||||`gxc.reserve@gxc.code`|
 ||||`gxc.token@gxc.code`|
