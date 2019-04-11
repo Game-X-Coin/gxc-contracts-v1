@@ -14,10 +14,15 @@ namespace gxc {
       cancel_deferred(owner().value);
 
       if (_it != _idx.end()) {
-         transaction out;
-         out.actions.emplace_back(action{{owner(), active_permission}, code(), "clrwithdraws"_n, owner()});
-         out.delay_sec = static_cast<uint32_t>((_it->scheduled_time - current_time_point()).to_seconds());
-         out.send(owner().value, owner(), true);
+         auto timeleft = (_it->scheduled_time - current_time_point()).to_seconds();
+         if (timeleft <= 0) {
+            clear_withdraws(code(), {owner(), active_permission}).send(owner());
+         } else {
+            transaction out;
+            out.actions.emplace_back(action{{owner(), active_permission}, code(), "clrwithdraws"_n, owner()});
+            out.delay_sec = static_cast<uint32_t>(timeleft);
+            out.send(owner().value, owner(), true);
+         }
       }
    }
 

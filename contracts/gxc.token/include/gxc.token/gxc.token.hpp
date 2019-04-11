@@ -61,6 +61,7 @@ namespace gxc {
 
       [[eosio::action]]
       void clrwithdraws(name owner);
+      typedef action_wrapper<"clrwithdraws"_n, &token_contract::clrwithdraws> clear_withdraws;
 
       [[eosio::action]]
       void approve(name owner, name spender, extended_asset value);
