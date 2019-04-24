@@ -1,1 +1,1 @@
-add_subdirectory(eosio-xt)
+add_subdirectory(eoslib)

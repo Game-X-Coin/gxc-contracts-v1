@@ -4,7 +4,7 @@
  */
 #pragma once
 
-#include <eosio-xt/eosio-xt.hpp>
+#include <eoslib/eoslib.hpp>
 
 namespace gxc {
    inline uint64_t token_hash(const char* data, uint32_t datalen) {

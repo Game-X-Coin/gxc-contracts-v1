@@ -7,7 +7,7 @@
 #include <eosio/name.hpp>
 #include <eosio/asset.hpp>
 #include <eosio/action.hpp>
-#include <eosio-xt/crypto.hpp>
+#include <eoslib/crypto.hpp>
 #include "symbol.hpp"
 
 #include <cmath>
