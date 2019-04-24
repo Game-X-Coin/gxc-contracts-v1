@@ -8,7 +8,7 @@ find_package(eosio.cdt)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D${TARGET_NETWORK}")
 
 add_subdirectory(libraries)
-link_libraries(eosio-xt)
+link_libraries(eoslib)
 
 add_subdirectory(gxc.bios)
 add_subdirectory(eosio.msig)
