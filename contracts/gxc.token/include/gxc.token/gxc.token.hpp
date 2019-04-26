@@ -45,6 +45,9 @@ namespace gxc {
       void setacntopts(name account, name issuer, symbol_code symbol, std::vector<key_value> opts);
 
       [[eosio::action]]
+      void setacntsopts(std::vector<name> accounts, name issuer, symbol_code symbol, std::vector<key_value> opts);
+
+      [[eosio::action]]
       void open(name owner, name issuer, symbol_code symbol, name payer);
 
       [[eosio::action]]

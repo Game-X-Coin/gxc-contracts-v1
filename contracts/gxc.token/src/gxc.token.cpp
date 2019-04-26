@@ -31,6 +31,12 @@ namespace gxc {
       token(_self, issuer, symbol).get_account(account).setopts(opts);
    }
 
+   void token_contract::setacntsopts(std::vector<name> accounts, name issuer, symbol_code symbol, std::vector<key_value> opts) {
+      auto _token = token(_self, issuer, symbol);
+      for (auto& account : accounts)
+         _token.get_account(account).setopts(opts);
+   }
+
    void token_contract::transfer(name from, name to, extended_asset value, std::string memo) {
       check(memo.size() <= 256, "memo has more than 256 bytes");
       check(from != to, "cannot transfer to self");
