@@ -69,8 +69,11 @@ void reserve::claim(name owner, extended_asset value) {
    token(_self).transfer(_self, basename(value.contract), value, "claim reserve");
    token(token_account).burn(value, "claim reserve");
    token(_self).transfer(_self, owner, extended_asset(claimed_asset, system_account), "claim reserve");
+
+   rsv.modify(it, same_payer, [&](auto& r) {
+      r.derivative -= value.quantity;
+      r.underlying -= claimed_asset;
+   });
 }
 
 } /// namespace gxc
-
-EOSIO_DISPATCH(gxc::reserve, (mint)(claim))

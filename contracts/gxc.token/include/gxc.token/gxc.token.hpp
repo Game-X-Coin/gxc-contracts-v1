@@ -45,6 +45,9 @@ namespace gxc {
       void setacntopts(name account, name issuer, symbol_code symbol, std::vector<key_value> opts);
 
       [[eosio::action]]
+      void setacntsopts(std::vector<name> accounts, name issuer, symbol_code symbol, std::vector<key_value> opts);
+
+      [[eosio::action]]
       void open(name owner, name issuer, symbol_code symbol, name payer);
 
       [[eosio::action]]
@@ -61,6 +64,7 @@ namespace gxc {
 
       [[eosio::action]]
       void clrwithdraws(name owner);
+      typedef action_wrapper<"clrwithdraws"_n, &token_contract::clrwithdraws> clear_withdraws;
 
       [[eosio::action]]
       void approve(name owner, name spender, extended_asset value);
