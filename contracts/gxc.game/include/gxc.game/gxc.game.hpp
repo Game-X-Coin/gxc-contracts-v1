@@ -19,18 +19,6 @@ public:
 
    [[eosio::action]]
    void seturi(name name, std::string uri);
-
-private:
-   struct [[eosio::table, eosio::contract("gxc.game")]] game {
-      name        name;
-      std::string uri;
-
-      uint64_t primary_key()const { return name.value; }
-
-      EOSLIB_SERIALIZE(game, (name)(uri))
-   };
-
-   typedef multi_index<"game"_n, game> games;
 };
 
 }

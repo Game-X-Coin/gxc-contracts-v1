@@ -6,7 +6,7 @@
 
 #include <eosio/asset.hpp>
 
-namespace gxc { namespace system {
+namespace gxc {
    using eosio::asset;
    using eosio::symbol;
 
@@ -40,4 +40,4 @@ namespace gxc { namespace system {
    };
 
    typedef eosio::multi_index<"rammarket"_n, exchange_state> rammarket;
-} }
+}

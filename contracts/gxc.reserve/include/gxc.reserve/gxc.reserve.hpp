@@ -5,15 +5,13 @@
 #pragma once
 
 #include <eosio/eosio.hpp>
+#include <eosio/asset.hpp>
 
 #include <gxclib/system.hpp>
 #include <gxclib/game.hpp>
-#include <gxclib/token.hpp>
 #include <gxclib/action.hpp>
 
 using namespace eosio;
-using gxc::get_float_amount;
-using std::string;
 
 namespace gxc {
 

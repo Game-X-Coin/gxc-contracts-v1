@@ -7,7 +7,7 @@
 #include <eosio/name.hpp>
 #include <eosio/asset.hpp>
 #include <eosio/action.hpp>
-#include <eosio-xt/crypto.hpp>
+#include <eoslib/crypto.hpp>
 #include "symbol.hpp"
 
 #include <cmath>
@@ -38,5 +38,35 @@ asset get_balance(name owner, name issuer, symbol_code sym_code) {
               reinterpret_cast<void*>(&balance), sizeof(asset));
    return balance;
 }
+
+struct token_contract_mock {
+   token_contract_mock(name auth) {
+      auths.emplace_back(permission_level(auth, active_permission));
+   }
+
+   token_contract_mock& with(name auth) {
+      auths.emplace_back(permission_level(auth, active_permission));
+      return *this;
+   }
+
+   using key_value = std::pair<std::string, std::vector<int8_t>>;
+
+   void mint(extended_asset value, std::vector<key_value> opts) {
+      action_wrapper<"mint"_n, &token_contract_mock::mint>(std::move(name(token_account)), auths)
+      .send(value, opts);
+   }
+
+   void transfer(name from, name to, extended_asset value, std::string memo) {
+      action_wrapper<"transfer"_n, &token_contract_mock::transfer>(std::move(name(token_account)), auths)
+      .send(from, to, value, memo);
+   }
+
+   void burn(extended_asset value, std::string memo) {
+      action_wrapper<"burn"_n, &token_contract_mock::burn>(std::move(name(token_account)), auths)
+      .send(value, memo);
+   }
+
+   std::vector<permission_level> auths;
+};
 
 }

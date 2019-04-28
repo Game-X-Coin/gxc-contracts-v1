@@ -7,7 +7,7 @@ Handles actions related to user accounts such as login or nickname register.
 ### connect
 
 ``` c++
-void login(name account_name, name game_name, string login_token);
+void connect(name account_name, name game_name, string login_token);
 ```
 
 Connect user account to game

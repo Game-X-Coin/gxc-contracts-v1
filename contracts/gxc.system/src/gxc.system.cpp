@@ -5,31 +5,31 @@
 #include <gxc.system/gxc.system.hpp>
 #include "native.cpp"
 
-namespace gxc { namespace system {
+namespace gxc {
 
-contract::contract(name s, name code, datastream<const char*> ds)
-: eosio::contract::contract(s, code, ds)
+system_contract::system_contract(name s, name code, datastream<const char*> ds)
+: contract(s, code, ds)
 , _rammarket(_self, _self.value)
 , _global(_self, _self.value) {
    _gstate = _global.exists() ? _global.get() : get_default_parameters();
 }
 
-contract::~contract() {
+system_contract::~system_contract() {
    _global.set(_gstate, _self);
 }
 
-gxc_global_state contract::get_default_parameters() {
+gxc_global_state system_contract::get_default_parameters() {
    gxc_global_state dp;
    get_blockchain_parameters(dp);
    return dp;
 }
 
-symbol contract::core_symbol()const {
+symbol system_contract::core_symbol()const {
    const static auto sym = get_core_symbol( _rammarket );
    return sym;
 }
 
-void contract::setram( uint64_t max_ram_size ) {
+void system_contract::setram( uint64_t max_ram_size ) {
    require_auth( _self );
 
    check( _gstate.max_ram_size < max_ram_size, "ram may only be increased" ); /// decreasing ram might result market maker issues
@@ -49,7 +49,7 @@ void contract::setram( uint64_t max_ram_size ) {
    _gstate.max_ram_size = max_ram_size;
 }
 
-void contract::update_ram_supply() {
+void system_contract::update_ram_supply() {
    auto cbt = current_block_time();
 
    if( cbt <= _gstate.last_ram_increase ) return;
@@ -74,26 +74,26 @@ void contract::update_ram_supply() {
  *  If update_ram_supply hasn't been called for the most recent block, then new ram will
  *  be allocated at the old rate up to the present block before switching the rate.
  */
-void contract::setramrate( uint16_t bytes_per_block ) {
+void system_contract::setramrate( uint16_t bytes_per_block ) {
    require_auth( _self );
 
    update_ram_supply();
    _gstate.new_ram_per_block = bytes_per_block;
 }
 
-void contract::setparams( const gxc::blockchain_parameters& params ) {
+void system_contract::setparams( const gxc::blockchain_parameters& params ) {
    require_auth( _self );
    (gxc::blockchain_parameters&)(_gstate) = params;
    check( 3 <= _gstate.max_authority_depth, "max_authority_depth should be at least 3" );
    set_blockchain_parameters( params );
 }
 
-void contract::setpriv( name account, uint8_t ispriv ) {
+void system_contract::setpriv( name account, uint8_t ispriv ) {
    require_auth( _self );
    eosio::set_privileged( account, ispriv );
 }
 
-void contract::setalimits( name account, int64_t ram, int64_t net, int64_t cpu ) {
+void system_contract::setalimits( name account, int64_t ram, int64_t net, int64_t cpu ) {
    require_auth( _self );
    user_resources_table userres( _self, account.value );
    auto ritr = userres.find( account.value );
@@ -101,7 +101,7 @@ void contract::setalimits( name account, int64_t ram, int64_t net, int64_t cpu )
    eosio::set_resource_limits( account, ram, net, cpu );
 }
 
-void contract::init(unsigned_int version, symbol core) {
+void system_contract::init(unsigned_int version, symbol core) {
    require_auth(_self);
    check(version.value == 0, "unsupported version for init action");
 
@@ -121,47 +121,38 @@ void contract::init(unsigned_int version, symbol core) {
       m.quote.balance.symbol = core;
    });
 
-   auto owner = chain::authority {
-      .threshold = 1,
-      .keys = {},
-      .accounts = {{{_self, active_permission}, 1}},
-      .waits = {}
-   };
-
-   auto active = chain::authority {
-      .threshold = 1,
-      .keys = {},
-      .accounts = {{{_self, active_permission}, 1}},
-      .waits = {}
-   };
-
-   auto newact = [&](name acnt) -> chain::newaccount {
-      return {
-         .creator = _self,
-         .name = acnt,
-         .owner = owner,
-         .active = active
-      };
-   };
+   auto system_active = authority().add_account(_self);
 
    if (!is_account(ram_account)) {
-      action({{_self, active_permission}}, _self, "newaccount"_n, newact(ram_account)).send();
+      action_newaccount(_self, {{_self, active_permission}})
+      .send(_self,
+            ram_account,
+            system_active,
+            system_active);
    }
+
    if (!is_account(ramfee_account)) {
-      action({{_self, active_permission}}, _self, "newaccount"_n, newact(ramfee_account)).send();
+      action_newaccount(_self, {{_self, active_permission}})
+      .send(_self,
+            ramfee_account,
+            system_active,
+            system_active);
    }
+
    if (!is_account(stake_account)) {
-      action({{_self, active_permission}}, _self, "newaccount"_n, newact(stake_account)).send();
+      action_newaccount(_self, {{_self, active_permission}})
+      .send(_self,
+            stake_account,
+            system_active,
+            system_active);
    }
 }
 
-void contract::genaccount(name creator, name name, authority owner, authority active, std::string nickname) {
+void system_contract::genaccount(name creator, name name, authority owner, authority active, std::string nickname) {
    require_auth(creator);
 
    action({{_self, active_permission}}, user_account, "setnick"_n, std::make_tuple(name, nickname)).send();
-   action({{creator, active_permission}, {_self, active_permission}}, _self, "newaccount"_n,
-      std::make_tuple(creator, name, owner, active)
-   ).send();
+   action_newaccount(_self, {{creator, active_permission},{_self, active_permission}}).send(creator, name, owner, active);
 }
 
-} }
+}

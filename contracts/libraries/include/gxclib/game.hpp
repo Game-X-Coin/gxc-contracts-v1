@@ -13,9 +13,37 @@ using eosio::check;
 
 constexpr name game_account = "gxc.game"_n;
 
-void check_is_game(name name) {
-   auto it = eosio::internal_use_do_not_use::db_find_i64(game_account.value, game_account.value, "game"_n.value, basename(name).value);
-   check(it != eosio::internal_use_do_not_use::db_end_i64(game_account.value, game_account.value, "game"_n.value), "not registered to game account");
-}
+   struct [[eosio::table, eosio::contract("gxc.game")]] game {
+      name        name; /**< Game account name */
+      std::string uri;  /**< Game metadata */
 
+      uint64_t primary_key()const { return name.value; }
+
+      EOSLIB_SERIALIZE(game, (name)(uri))
+   };
+
+   typedef eosio::multi_index<"game"_n, game> games;
+
+   /**
+    * Verifies that @ref name has game auth.
+    * Game auth is required to mint game token.
+    *
+    * @brief Verifies that @ref name has game auth.
+    * @param name - name of the account to be verified
+    */
+   bool has_gauth(name name) {
+      games gms(game_account, game_account.value);
+      return gms.find(basename(name).value) != gms.end();
+   }
+
+   /**
+    * Verifies that @ref name has game auth. Fails if not found.
+    * Game auth is required to mint game token.
+    *
+    * @brief Verifies that @ref name has game auth.
+    * @param name - name of the account to be verified
+    */
+   void require_gauth(name name) {
+      check(has_gauth(name), "not registered to game account");
+   }
 }

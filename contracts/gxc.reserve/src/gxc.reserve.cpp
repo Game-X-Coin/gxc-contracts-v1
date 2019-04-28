@@ -3,14 +3,15 @@
  * @copyright defined in gxc/LICENSE
  */
 #include <gxc.reserve/gxc.reserve.hpp>
+#include <gxclib/token.hpp>
+
+using token = gxc::token_contract_mock;
 
 namespace gxc {
 
-using system::active_permission;
-
 void reserve::mint(extended_asset derivative, extended_asset underlying, std::vector<key_value> opts) {
    require_vauth(derivative.contract);
-   check_is_game(derivative.contract);
+   require_gauth(derivative.contract);
 
    std::vector<std::string> valid_opts = {
       "withdraw_min_amount",
@@ -38,14 +39,10 @@ void reserve::mint(extended_asset derivative, extended_asset underlying, std::ve
 
    // TODO: check allowance
    // deposit underlying asset to reserve
-   action(permission_level(_self, system::active_permission),
-      token_account, "transfer"_n, std::make_tuple(basename(derivative.contract), _self, underlying, string("deposit in reserve"))
-   ).send();
+   token(_self).transfer(basename(derivative.contract), _self, underlying, "deposit in reserve");
 
    // create derivative token
-   action(permission_level(token_account, system::active_permission),
-      token_account, "mint"_n, std::make_tuple(derivative, opts)
-   ).send();
+   token(token_account).mint(derivative, opts);
 }
 
 void reserve::claim(name owner, extended_asset value) {
@@ -68,24 +65,15 @@ void reserve::claim(name owner, extended_asset value) {
    value.quantity.amount = static_cast<int64_t>(get_float_amount(claimed_asset) / ratio * pow(10, it.derivative.symbol.precision()));
 
    // transfer token
-   action(
-      {_self, active_permission}, token_account, "transfer"_n, std::make_tuple(owner, _self, value, string("claim reserve"))
-   ).send();
+   token(_self).transfer(owner, _self, value, "claim reserve");
+   token(_self).transfer(_self, basename(value.contract), value, "claim reserve");
+   token(token_account).burn(value, "claim reserve");
+   token(_self).transfer(_self, owner, extended_asset(claimed_asset, system_account), "claim reserve");
 
-   action(
-      {_self, active_permission}, token_account, "transfer"_n, std::make_tuple(_self, basename(value.contract), value, string("claim reserve"))
-   ).send();
-
-   action(
-      {token_account, active_permission}, token_account, "burn"_n, std::make_tuple(value, string("claim reserve"))
-   ).send();
-
-   action(
-      {_self, active_permission}, token_account, "transfer"_n,
-      std::make_tuple(_self, owner, extended_asset(claimed_asset, system::account),  string("claim reserve"))
-   ).send();
+   rsv.modify(it, same_payer, [&](auto& r) {
+      r.derivative -= value.quantity;
+      r.underlying -= claimed_asset;
+   });
 }
 
 } /// namespace gxc
-
-EOSIO_DISPATCH(gxc::reserve, (mint)(claim))

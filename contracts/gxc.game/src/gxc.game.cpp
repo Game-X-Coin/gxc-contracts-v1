@@ -3,6 +3,7 @@
  * @copyright defined in gxc/LICENSE
  */
 #include <gxc.game/gxc.game.hpp>
+#include <gxclib/game.hpp>
 
 namespace gxc {
 

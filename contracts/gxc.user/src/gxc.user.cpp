@@ -26,7 +26,7 @@ void user_contract::setnick(name account_name, string nickname) {
    check(nickname.size() >= 6 && nickname.size() <= 24, "nickname has invalid length");
    check(is_valid_nickname(nickname), "nickname contains invalid character");
 
-   check(has_auth(system::account) || has_auth(account_name), "missing required authority");
+   check(has_auth(system_account) || has_auth(account_name), "missing required authority");
 
    nicktable nt(_self, _self.value);
 

@@ -6,12 +6,12 @@
 
 #include <eosio/symbol.hpp>
 
-namespace gxc { namespace system {
+namespace gxc {
 
 using eosio::name;
 using eosio::symbol;
 
-constexpr name account = "gxc"_n;
+constexpr name system_account = "gxc"_n;
 
 constexpr name owner_permission = "owner"_n;
 constexpr name active_permission = "active"_n;
@@ -19,4 +19,4 @@ constexpr name code_permission = "gxc.code"_n;
 
 constexpr symbol core_symbol = symbol("GXC", 4);
 
-} }
+}

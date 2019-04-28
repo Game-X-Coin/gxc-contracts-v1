@@ -8,9 +8,9 @@
 #include "exchange_state.cpp"
 #include "delegate_bandwidth.cpp"
 
-namespace gxc { namespace system {
+namespace gxc {
 
-void contract::onblock(ignore<block_header> header) {
+void system_contract::onblock(ignore<block_header> header) {
    require_auth(_self);
 
    block_timestamp timestamp;
@@ -19,7 +19,7 @@ void contract::onblock(ignore<block_header> header) {
    _gstate.last_block_num = timestamp;
 }
 
-void contract::newaccount(name creator, name name, ignore<authority> owner, ignore<authority> active) {
+void system_contract::newaccount(name creator, name name, ignore<authority> owner, ignore<authority> active) {
    require_auth(_self);
 
    if (creator != _self) {
@@ -30,8 +30,8 @@ void contract::newaccount(name creator, name name, ignore<authority> owner, igno
 
       userres.emplace(name, [&](auto& res) {
          res.owner = name;
-         res.net_weight = asset(0, system::contract::get_core_symbol());
-         res.cpu_weight = asset(0, system::contract::get_core_symbol());
+         res.net_weight = asset(0, system_contract::get_core_symbol());
+         res.cpu_weight = asset(0, system_contract::get_core_symbol());
       });
 
       eosio::set_resource_limits(name, 0 + ram_gift_bytes, 0, 0);
@@ -40,7 +40,7 @@ void contract::newaccount(name creator, name name, ignore<authority> owner, igno
    }
 }
 
-void contract::setabi(name account, const std::vector<char>& abi) {
+void system_contract::setabi(name account, const std::vector<char>& abi) {
    check(is_admin(account), "not allowed to normal account");
 
    eosio::multi_index<"abihash"_n, abi_hash> table(_self, _self.value);
@@ -60,8 +60,8 @@ void contract::setabi(name account, const std::vector<char>& abi) {
    }
 }
 
-void contract::setcode(name account, uint8_t vmtype, uint8_t vmversion, const std::vector<char>& code) {
+void system_contract::setcode(name account, uint8_t vmtype, uint8_t vmversion, const std::vector<char>& code) {
    check(is_admin(account), "not allowed to normal account");
 }
 
-} }
+}
