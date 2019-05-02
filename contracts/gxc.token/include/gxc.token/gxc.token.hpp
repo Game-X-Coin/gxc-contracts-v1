@@ -281,7 +281,9 @@ namespace gxc {
          {}
 
          void check_account_is_valid() {
-            if (code() != owner()) {
+            if (skip_valid) {
+               skip_valid = false;
+            } else if (code() != owner()) {
                check(!_this->option(opt::frozen), "account is frozen");
                check(!_st->option(token::opt::whitelist_on) || _this->option(opt::whitelist), "not whitelisted account");
             }
@@ -312,9 +314,15 @@ namespace gxc {
             return *this;
          }
 
+         account& skip_validation() {
+            skip_valid = true;
+            return *this;
+         }
+
       private:
          const token& _st;
          bool  keep_balance;
+         bool  skip_valid;
          name  ram_payer = eosio::same_payer;
 
          void sub_balance(extended_asset value);

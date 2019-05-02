@@ -33,9 +33,8 @@ namespace gxc {
       check_account_is_valid();
       check(_this->balance.amount >= value.quantity.amount, "overdrawn balance");
 
-      if (!_this->option(opt::whitelist) && !keep_balance &&
-          _this->balance.amount == value.quantity.amount &&
-          _this->deposit().amount == 0)
+      if (!_this->option(opt::frozen) && !_this->option(opt::whitelist) && !keep_balance &&
+          _this->balance.amount == value.quantity.amount && _this->deposit().amount == 0)
       {
          erase();
       } else {
@@ -65,9 +64,8 @@ namespace gxc {
       check_account_is_valid();
       check(_this->deposit().amount >= value.quantity.amount, "overdrawn deposit");
 
-      if (!_this->option(opt::whitelist) && !keep_balance &&
-          _this->deposit().amount == value.quantity.amount &&
-          _this->balance.amount == 0)
+      if (!_this->option(opt::frozen) && !_this->option(opt::whitelist) && !keep_balance &&
+          _this->deposit().amount == value.quantity.amount && _this->balance.amount == 0)
       {
          erase();
       } else {
