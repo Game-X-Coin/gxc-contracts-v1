@@ -1,11 +1,14 @@
 #include <gxc.htlc/gxc.htlc.hpp>
+
 #include <eosio/system.hpp>
 #include <eosio/transaction.hpp>
 #include <eosio/crypto.hpp>
 
 using std::string;
 
-void eoshtlc::on_transfer(name from, name to, asset quantity, string memo) {
+namespace gxc {
+
+void htlc_contract::on_transfer(name from, name to, asset quantity, string memo) {
    if (from == _self) return;
 
    htlcs idx(_self, from.value);
@@ -19,7 +22,7 @@ void eoshtlc::on_transfer(name from, name to, asset quantity, string memo) {
    });
 }
 
-void eoshtlc::newcontract(name owner, name contract_name, name recipient, extended_asset value, checksum256 hashlock, time_point_sec timelock) {
+void htlc_contract::newcontract(name owner, name contract_name, name recipient, extended_asset value, checksum256 hashlock, time_point_sec timelock) {
    require_auth(owner);
 
    htlcs idx(_self, owner.value);
@@ -35,7 +38,7 @@ void eoshtlc::newcontract(name owner, name contract_name, name recipient, extend
    });
 }
 
-void eoshtlc::withdraw(name owner, name contract_name, checksum256 preimage) {
+void htlc_contract::withdraw(name owner, name contract_name, checksum256 preimage) {
    htlcs idx(_self, owner.value);
    auto it = idx.get(contract_name.value);
    check(it.activated, "contract not activated");
@@ -52,7 +55,7 @@ void eoshtlc::withdraw(name owner, name contract_name, checksum256 preimage) {
    idx.erase(it);
 }
 
-void eoshtlc::cancel(name owner, name contract_name) {
+void htlc_contract::cancel(name owner, name contract_name) {
    require_auth(owner);
 
    htlcs idx(_self, owner.value);
@@ -64,4 +67,6 @@ void eoshtlc::cancel(name owner, name contract_name) {
       transfer_action(it.value.contract, {{_self, "active"_n}}).send(_self, owner, it.value.quantity, "");
 
    idx.erase(it);
+}
+
 }
