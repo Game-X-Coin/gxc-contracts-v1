@@ -4,7 +4,9 @@
 using namespace eosio;
 using std::string;
 
-class [[eosio::contract("gxc.htlc")]] eoshtlc : public contract {
+namespace gxc {
+
+class [[eosio::contract("gxc.htlc")]] htlc_contract : public contract {
 public:
    using contract::contract;
 
@@ -31,7 +33,7 @@ public:
 
    [[eosio::on_notify("*::transfer")]]
    void on_transfer(name from, name to, asset quantity, string memo);
-   typedef action_wrapper<"transfer"_n, &eoshtlc::on_transfer> transfer_action;
+   typedef action_wrapper<"transfer"_n, &htlc_contract::on_transfer> transfer_action;
 
    [[eosio::action]]
    void newcontract(name owner, name contract_name, name recipient, extended_asset value, checksum256 hashlock, time_point_sec timelock);
@@ -42,3 +44,5 @@ public:
    [[eosio::action]]
    void cancel(name owner, name contract_name);
 };
+
+}
