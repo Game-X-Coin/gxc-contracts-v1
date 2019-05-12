@@ -29,9 +29,16 @@ struct [[eosio::table("global"), eosio::contract("gxc.system")]] gxc_global_stat
    block_timestamp last_block_num;
    uint8_t  revision = 0;
 
+#ifdef TARGET_MAINNET
+   uint8_t  ram_gift_kbytes = 4;
+#endif
+
    EOSLIB_SERIALIZE_DERIVED(gxc_global_state, gxc::blockchain_parameters,
                             (max_ram_size)(total_ram_bytes_reserved)(total_ram_stake)
                             (new_ram_per_block)(last_ram_increase)(last_block_num)(revision)
+#ifdef TARGET_MAINNET
+                            (ram_gift_kbytes)
+#endif
    )
 };
 
@@ -47,7 +54,7 @@ public:
    static constexpr symbol ramcore_symbol = symbol(symbol_code("RAMCORE"), 4);
    static constexpr symbol ram_symbol = symbol(symbol_code("RAM"), 0);
 
-   static constexpr int64_t ram_gift_bytes = 4 * 1024; // 4KiB
+   static int64_t ram_gift_bytes;
 
    static symbol get_core_symbol(name system_account = gxc::system_account) {
       rammarket rm(system_account, system_account.value);
@@ -73,6 +80,9 @@ public:
 
    [[eosio::action]]
    void sellram (name account, int64_t bytes);
+
+   [[eosio::action]]
+   void setramgift(uint8_t kbytes);
 
    [[eosio::action]]
    void refund (name owner);
