@@ -12,6 +12,10 @@ system_contract::system_contract(name s, name code, datastream<const char*> ds)
 , _rammarket(_self, _self.value)
 , _global(_self, _self.value) {
    _gstate = _global.exists() ? _global.get() : get_default_parameters();
+
+#ifdef TARGET_MAINNET
+   ram_gift_bytes = _gstate.ram_gift_kbytes * 1024;
+#endif
 }
 
 system_contract::~system_contract() {
