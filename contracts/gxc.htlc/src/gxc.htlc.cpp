@@ -8,22 +8,11 @@ using std::string;
 
 namespace gxc {
 
-void htlc_contract::on_transfer(name from, name to, asset quantity, string memo) {
-   if (from == _self) return;
-
-   htlcs idx(_self, from.value);
-   auto it = idx.get(name(memo).value);
-
-   check(!it.activated, "contract is already activated");
-   check(it.value == extended_asset{quantity, get_first_receiver()}, "token amount not match: " + it.value.quantity.to_string() + "@" + it.value.contract.to_string());
-
-   idx.modify(it, same_payer, [&](auto& lck) {
-      lck.activated = true;
-   });
-}
-
-void htlc_contract::newcontract(name owner, name contract_name, name recipient, extended_asset value, checksum256 hashlock, time_point_sec timelock) {
+void htlc_contract::newcontract(name owner, name contract_name, std::variant<name, checksum160> recipient, extended_asset value, checksum256 hashlock, time_point_sec timelock) {
    require_auth(owner);
+
+   if(std::holds_alternative<checksum160>(recipient))
+      print("error");
 
    htlcs idx(_self, owner.value);
    check(idx.find(contract_name.value) == idx.end(), "existing contract name");
@@ -36,12 +25,13 @@ void htlc_contract::newcontract(name owner, name contract_name, name recipient, 
       lck.hashlock = hashlock;
       lck.timelock = timelock;
    });
+
+   transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(owner, _self, value, "");
 }
 
 void htlc_contract::withdraw(name owner, name contract_name, checksum256 preimage) {
    htlcs idx(_self, owner.value);
    auto it = idx.get(contract_name.value);
-   check(it.activated, "contract not activated");
 
    // `preimage` works as a key here.
    //require_auth(it.recipient);
@@ -50,7 +40,7 @@ void htlc_contract::withdraw(name owner, name contract_name, checksum256 preimag
    auto hash = eosio::sha256(reinterpret_cast<const char*>(data.data()), data.size());
    check(memcmp((const void*)it.hashlock.data(), (const void*)hash.data(), 32) == 0, "invalid preimage");
 
-   transfer_action(it.value.contract, {{_self, "active"_n}}).send(_self, it.recipient, it.value.quantity, "");
+   transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(_self, it.recipient, it.value, "");
 
    idx.erase(it);
 }
@@ -63,8 +53,7 @@ void htlc_contract::cancel(name owner, name contract_name) {
 
    check(it.timelock < current_time_point(), "contract not expired");
 
-   if (it.activated)
-      transfer_action(it.value.contract, {{_self, "active"_n}}).send(_self, owner, it.value.quantity, "");
+   transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(_self, owner, it.value, "");
 
    idx.erase(it);
 }
