@@ -23,7 +23,7 @@ void htlc_contract::newcontract(name owner, string contract_name, std::variant<n
       lck.timelock = timelock;
    });
 
-   transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(owner, _self, value, "FROM " + owner.to_string() + (contract_name.size() ? ", " : "") + contract_name);
+   transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(owner, _self, value, "");
 }
 
 void htlc_contract::withdraw(name owner, string contract_name, checksum256 preimage) {
