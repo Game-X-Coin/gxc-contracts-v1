@@ -40,7 +40,10 @@ void htlc_contract::withdraw(name owner, name contract_name, checksum256 preimag
    auto hash = eosio::sha256(reinterpret_cast<const char*>(data.data()), data.size());
    check(memcmp((const void*)it.hashlock.data(), (const void*)hash.data(), 32) == 0, "invalid preimage");
 
-   transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(_self, it.recipient, it.value, "");
+   if (std::holds_alternative<name>(it.recipient))
+      transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(_self, std::get<name>(it.recipient), it.value, "");
+   else
+      transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(_self, "gxc.vault"_n, it.value, "");
 
    idx.erase(it);
 }
