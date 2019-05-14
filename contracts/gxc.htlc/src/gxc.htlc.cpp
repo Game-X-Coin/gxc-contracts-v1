@@ -8,14 +8,11 @@ using std::string;
 
 namespace gxc {
 
-void htlc_contract::newcontract(name owner, name contract_name, std::variant<name, checksum160> recipient, extended_asset value, checksum256 hashlock, time_point_sec timelock) {
+void htlc_contract::newcontract(name owner, string contract_name, std::variant<name, checksum160> recipient, extended_asset value, checksum256 hashlock, time_point_sec timelock) {
    require_auth(owner);
 
-   if(std::holds_alternative<checksum160>(recipient))
-      print("error");
-
    htlcs idx(_self, owner.value);
-   check(idx.find(contract_name.value) == idx.end(), "existing contract name");
+   check(idx.find(htlc::hash(contract_name)) == idx.end(), "existing contract name");
    check(timelock > current_time_point(), "the expiration time should be in the future");
 
    idx.emplace(owner, [&](auto& lck) {
@@ -26,12 +23,12 @@ void htlc_contract::newcontract(name owner, name contract_name, std::variant<nam
       lck.timelock = timelock;
    });
 
-   transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(owner, _self, value, "");
+   transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(owner, _self, value, "FROM " + owner.to_string() + (contract_name.size() ? ", " : "") + contract_name);
 }
 
-void htlc_contract::withdraw(name owner, name contract_name, checksum256 preimage) {
+void htlc_contract::withdraw(name owner, string contract_name, checksum256 preimage) {
    htlcs idx(_self, owner.value);
-   auto it = idx.get(contract_name.value);
+   const auto& it = idx.get(htlc::hash(contract_name));
 
    // `preimage` works as a key here.
    //require_auth(it.recipient);
@@ -48,11 +45,11 @@ void htlc_contract::withdraw(name owner, name contract_name, checksum256 preimag
    idx.erase(it);
 }
 
-void htlc_contract::cancel(name owner, name contract_name) {
+void htlc_contract::cancel(name owner, string contract_name) {
    require_auth(owner);
 
    htlcs idx(_self, owner.value);
-   auto it = idx.get(contract_name.value);
+   const auto& it = idx.get(htlc::hash(contract_name));
 
    check(it.timelock < current_time_point(), "contract not expired");
 
