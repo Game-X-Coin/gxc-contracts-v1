@@ -36,7 +36,7 @@ public:
    void withdraw(name owner, string contract_name, checksum256 preimage);
 
    [[eosio::action]]
-   void cancel(name owner, string contract_name);
+   void refund(name owner, string contract_name);
 };
 
 }

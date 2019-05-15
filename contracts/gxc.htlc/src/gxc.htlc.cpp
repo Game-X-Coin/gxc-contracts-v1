@@ -4,8 +4,6 @@
 #include <eosio/transaction.hpp>
 #include <eosio/crypto.hpp>
 
-using std::string;
-
 namespace gxc {
 
 void htlc_contract::newcontract(name owner, string contract_name, std::variant<name, checksum160> recipient, extended_asset value, checksum256 hashlock, time_point_sec timelock) {
@@ -23,7 +21,7 @@ void htlc_contract::newcontract(name owner, string contract_name, std::variant<n
       lck.timelock = timelock;
    });
 
-   transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(owner, _self, value, "");
+   transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(owner, _self, value, "CREATED FROM " + owner.to_string() + (contract_name.size() ? ", " : "") + contract_name);
 }
 
 void htlc_contract::withdraw(name owner, string contract_name, checksum256 preimage) {
@@ -38,14 +36,14 @@ void htlc_contract::withdraw(name owner, string contract_name, checksum256 preim
    check(memcmp((const void*)it.hashlock.data(), (const void*)hash.data(), 32) == 0, "invalid preimage");
 
    if (std::holds_alternative<name>(it.recipient))
-      transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(_self, std::get<name>(it.recipient), it.value, "");
+      transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(_self, std::get<name>(it.recipient), it.value, "FROM " + owner.to_string() + (contract_name.size() ? ", " : "") + contract_name);
    else
-      transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(_self, "gxc.vault"_n, it.value, "");
+      transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(_self, "gxc.vault"_n, it.value, "FROM " + owner.to_string() + (contract_name.size() ? ", " : "") + contract_name);
 
    idx.erase(it);
 }
 
-void htlc_contract::cancel(name owner, string contract_name) {
+void htlc_contract::refund(name owner, string contract_name) {
    require_auth(owner);
 
    htlcs idx(_self, owner.value);
@@ -53,7 +51,7 @@ void htlc_contract::cancel(name owner, string contract_name) {
 
    check(it.timelock < current_time_point(), "contract not expired");
 
-   transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(_self, owner, it.value, "");
+   transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(_self, owner, it.value, "REFUNDED TO " + std::get<name>(it.recipient).to_string() + (contract_name.size() ? ", " : "") + contract_name);
 
    idx.erase(it);
 }
