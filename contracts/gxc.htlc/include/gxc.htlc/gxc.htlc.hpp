@@ -18,7 +18,7 @@ public:
       checksum256 hashlock;
       time_point_sec timelock;
 
-      static uint64_t hash(string s) { return fasthash64(s.data(), s.size()); }
+      static uint64_t hash(string s) { return xxh64(s.data(), s.size()); }
       uint64_t primary_key()const { return htlc::hash(contract_name); }
 
       EOSLIB_SERIALIZE(htlc, (contract_name)(recipient)(value)(hashlock)(timelock))
