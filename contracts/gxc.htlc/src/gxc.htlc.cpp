@@ -3,6 +3,7 @@
 #include <eosio/system.hpp>
 #include <eosio/transaction.hpp>
 #include <eosio/crypto.hpp>
+#include <eoslib/hex.hpp>
 
 namespace gxc {
 
@@ -51,10 +52,13 @@ void htlc_contract::refund(name owner, string contract_name) {
 
    check(it.timelock < current_time_point(), "contract not expired");
 
-   if (std::holds_alternative<name>(it.recipient))
+   if (std::holds_alternative<name>(it.recipient)) {
       transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(_self, owner, it.value, "REFUNDED FROM " + std::get<name>(it.recipient).to_string() + (contract_name.size() ? ", " : "") + contract_name);
-   else
-      transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(_self, owner, it.value, "");
+   } else {
+      auto bytes = std::get<checksum160>(it.recipient).extract_as_byte_array();
+      auto str_recipient = to_hex(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+      transfer_action("gxc.token"_n, {{_self, "active"_n}}).send(_self, owner, it.value, "REFUNDED FROM " + str_recipient + (contract_name.size() ? ", " : "") + contract_name);
+   }
 
    idx.erase(it);
 }
