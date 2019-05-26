@@ -8,6 +8,10 @@
 
 namespace gxc {
    inline uint64_t token_hash(const char* data, uint32_t datalen) {
+#ifdef TARGET_TESTNET
       return eosio::fasthash64(data, datalen);
+#else
+      return eosio::xxh64(data, datalen);
+#endif
    }
 }
