@@ -1,6 +1,7 @@
 #include <eosio/eosio.hpp>
 #include <eosio/asset.hpp>
 #include <eoslib/crypto.hpp>
+#include <gxclib/symbol.hpp>
 
 using namespace eosio;
 using std::string;
@@ -24,7 +25,21 @@ public:
       EOSLIB_SERIALIZE(htlc, (contract_name)(recipient)(value)(hashlock)(timelock))
    };
 
+   struct [[eosio::table]] config {
+      extended_asset min_amount;
+      uint32_t min_duration;
+
+      static uint64_t hash(extended_asset value) {
+         auto sym_code = extended_symbol_code(value.quantity.symbol, value.contract);
+         return xxh64(reinterpret_cast<const char*>(&sym_code), sizeof(uint128_t));
+      }
+      uint64_t primary_key()const { return config::hash(min_amount); }
+
+      EOSLIB_SERIALIZE(config, (min_amount)(min_duration));
+   };
+
    typedef multi_index<"htlc"_n, htlc> htlcs;
+   typedef multi_index<"config"_n, config> configs;
 
    void transfer(name from, name to, extended_asset value, string memo) {}
    typedef action_wrapper<"transfer"_n, &htlc_contract::transfer> transfer_action;
@@ -37,6 +52,9 @@ public:
 
    [[eosio::action]]
    void refund(name owner, string contract_name);
+
+   [[eosio::action]]
+   void setconfig(extended_asset min_amount, uint32_t min_duration);
 };
 
 }
