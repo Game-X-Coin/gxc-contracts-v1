@@ -12,7 +12,15 @@ void htlc_contract::newcontract(name owner, string contract_name, std::variant<n
 
    htlcs idx(_self, owner.value);
    check(idx.find(htlc::hash(contract_name)) == idx.end(), "existing contract name");
-   check(timelock > current_time_point(), "the expiration time should be in the future");
+
+   configs cfg(_self, _self.value);
+   auto it = cfg.find(config::hash(value));
+
+   auto min_amount = (it != cfg.end()) ? it->min_amount : extended_asset(0, extended_symbol(value.quantity.symbol, value.contract));
+   auto min_duration = (it != cfg.end()) ? it->min_duration: 0;
+
+   check(value >= min_amount, "specified amount is not enough");
+   check(timelock >= current_time_point() + microseconds(static_cast<int64_t>(min_duration * 1000)), "the expiration time should be in the future");
 
    idx.emplace(owner, [&](auto& lck) {
       lck.contract_name = contract_name;
@@ -61,6 +69,29 @@ void htlc_contract::refund(name owner, string contract_name) {
    }
 
    idx.erase(it);
+}
+
+void htlc_contract::setconfig(extended_asset min_amount, uint32_t min_duration) {
+   require_auth(min_amount.contract);
+
+   check(min_amount.quantity.symbol.is_valid(), "invalid symbol name `" + min_amount.quantity.symbol.code().to_string() + "`");
+   check(min_amount.quantity.is_valid(), "invalid quantity");
+   check(min_amount.quantity.amount >= 0, "must not be negative quantity");
+   
+   configs idx(_self, _self.value);
+   auto it = idx.find(config::hash(min_amount));
+
+   if (it != idx.end()) {
+      idx.modify(it, same_payer, [&](auto& c) {
+         c.min_amount = min_amount;
+         c.min_duration = min_duration;
+      });
+   } else {
+      idx.emplace(min_amount.contract, [&](auto& c) {
+         c.min_amount = min_amount;
+         c.min_duration = min_duration;
+      });
+   }
 }
 
 }
