@@ -7,6 +7,8 @@
 
 namespace gxc {
 
+constexpr auto vault_account = "gxc.vault"_n.value;
+
 void htlc_contract::newcontract(name owner, string contract_name, std::variant<name, checksum160> recipient, extended_asset value, checksum256 hashlock, time_point_sec timelock) {
    require_auth(owner);
 
@@ -16,8 +18,10 @@ void htlc_contract::newcontract(name owner, string contract_name, std::variant<n
    configs cfg(_self, _self.value);
    auto it = cfg.find(config::hash(value));
 
-   auto min_amount = (it != cfg.end()) ? it->min_amount : extended_asset(0, extended_symbol(value.quantity.symbol, value.contract));
-   auto min_duration = (it != cfg.end()) ? it->min_duration: 0;
+   bool constrained = owner.value != vault_account && it != cfg.end();
+
+   auto min_amount = (constrained) ? it->min_amount : extended_asset(0, extended_symbol(value.quantity.symbol, value.contract));
+   auto min_duration = (constrained) ? it->min_duration : 0;
 
    check(value >= min_amount, "specified amount is not enough");
    check(timelock >= current_time_point() + microseconds(static_cast<int64_t>(min_duration * 1000)), "the expiration time should be in the future");
