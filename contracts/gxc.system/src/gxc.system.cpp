@@ -3,6 +3,9 @@
  * @copyright defined in gxc/LICENSE
  */
 #include <gxc.system/gxc.system.hpp>
+
+#include "delegate_bandwidth.cpp"
+#include "exchange_state.cpp"
 #include "native.cpp"
 
 namespace gxc {
