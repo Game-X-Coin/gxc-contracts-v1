@@ -10,9 +10,10 @@
 #include <gxclib/dispatcher.hpp>
 #include <gxclib/system.hpp>
 #include <gxclib/chain_types.hpp>
-#include <gxclib/exchange_state.hpp>
 #include <gxclib/name.hpp>
 #include <gxclib/privileged.hpp>
+
+#include <gxc.system/exchange_state.hpp>
 
 using namespace eosio;
 

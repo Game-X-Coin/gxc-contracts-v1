@@ -5,9 +5,6 @@
 #include <eosio/crypto.hpp>
 #include <gxc.system/gxc.system.hpp>
 
-#include "exchange_state.cpp"
-#include "delegate_bandwidth.cpp"
-
 namespace gxc {
 
 void system_contract::onblock(ignore<block_header> header) {
