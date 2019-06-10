@@ -10,7 +10,7 @@ void bancor_contract::convert(name sender, extended_asset from, extended_asset t
    configuration cfg(_self, _self.value);
    check(cfg.exists(), "contract not initialized");
 
-   if (from.get_extended_symbol() == cfg.get().connected.get_extended_symbol()) {
+   if (from.get_extended_symbol() == cfg.get().get_connected_symbol()) {
       // initialize connector or buy smart
       connectors conn(_self, to.contract.value);
       auto it = conn.find(to.quantity.symbol.code().raw());
@@ -50,7 +50,7 @@ void bancor_contract::convert(name sender, extended_asset from, extended_asset t
       check(it != conn.end(), "connector not exists");
 
       conn.modify(it, same_payer, [&](auto& c) {
-         auto connected_out = c.convert_from_smart(from, cfg.get().connected.get_extended_symbol());
+         auto connected_out = c.convert_from_smart(from, cfg.get().get_connected_symbol());
 
          charges chrg(_self, from.contract.value);
          auto cit = chrg.find(from.quantity.symbol.code().raw());
@@ -64,9 +64,9 @@ void bancor_contract::convert(name sender, extended_asset from, extended_asset t
          auto refund = extended_asset{int64_t(from.quantity.amount * (1 - connected_out.ratio)), from.get_extended_symbol()};
          token(from.contract, _self).transfer(sender, _self, from - refund);
          token(from.contract, _self).transfer(_self, null_account, from - refund);
-         token(cfg.get().connected.contract, _self).transfer(_self, sender, quant_after_fee);
+         token(cfg.get().connected_contract, _self).transfer(_self, sender, quant_after_fee);
          if (fee.quantity.amount > 0) {
-            token(cfg.get().connected.contract, _self).transfer(_self, cfg.get().owner, fee, "conversion fee");
+            token(cfg.get().connected_contract, _self).transfer(_self, cfg.get().owner, fee, "conversion fee");
          }
          //print("effective_price = ", asset(quant_after_fee.quantity.amount / (from.quantity.amount - refund.amount) * pow(10, from.quantity.symbol.precision()), connected_out.value.quantity.symbol));
       });
@@ -78,7 +78,7 @@ void bancor_contract::init(name owner, extended_symbol connected) {
 
    configuration cfg(_self, _self.value);
    check(!cfg.exists(), "already initialized");
-   cfg.set({extended_asset{0, connected}, 0, owner}, _self);
+   cfg.set({asset{0, connected.get_symbol()}, 0, owner, connected.get_contract()}, _self);
 }
 
 void bancor_contract::connect(extended_symbol smart, extended_asset balance, double weight) {
@@ -86,7 +86,7 @@ void bancor_contract::connect(extended_symbol smart, extended_asset balance, dou
 
    configuration cfg(_self, _self.value);
    check(cfg.exists(), "contract not initialized");
-   check(cfg.get().connected.get_extended_symbol() == balance.get_extended_symbol(), "balance should be paid by connected token");
+   check(cfg.get().get_connected_symbol() == balance.get_extended_symbol(), "balance should be paid by connected token");
 
    connectors conn(_self, smart.get_contract().value);
    auto it = conn.find(smart.get_symbol().code().raw());
@@ -105,14 +105,14 @@ void bancor_contract::setcharge(int16_t rate, std::optional<extended_asset> fixe
 
    configuration cfg(_self, _self.value);
    check(cfg.exists(), "initialize contract before setting charge");
-   check(!fixed || cfg.get().connected.get_extended_symbol() == fixed->get_extended_symbol(), "represent conversion fee in connected token");
+   check(!fixed || cfg.get().get_connected_symbol() == fixed->get_extended_symbol(), "represent conversion fee in connected token");
 
    if (!smart) {
       check(rate >= 0 && rate <= 1000, "rate needs to be in the range of 0-1000 (per mille)");
       auto it = cfg.get();
       it.rate = static_cast<uint16_t>(rate);
       if (fixed)
-         it.connected = *fixed;
+         it.connected = fixed->quantity;
       cfg.set(it, _self);
    } else {
       charges chrg(_self, smart->get_contract().value);
@@ -129,13 +129,13 @@ void bancor_contract::setcharge(int16_t rate, std::optional<extended_asset> fixe
          chrg.emplace(_self, [&](auto& c) {
             c.smart = *smart;
             c.rate = static_cast<uint16_t>(rate);
-            c.connected = fixed ? *fixed : extended_asset(0, cfg.get().connected.get_extended_symbol());
+            c.connected = fixed ? fixed->quantity : asset{ 0, cfg.get().connected.symbol };
          });
       } else {
          chrg.modify(it, same_payer, [&](auto& c) {
             c.rate = static_cast<uint16_t>(rate);
             if (fixed)
-               c.connected = *fixed;
+               c.connected = fixed->quantity;
          });
       }
    }
