@@ -94,10 +94,11 @@ struct connector {
 
    struct converted {
       extended_asset value;
+      asset delta;
       double ratio;
    };
 
-   converted convert_to_smart(const extended_asset& from, const extended_symbol& to) {
+   converted convert_to_smart(const extended_asset& from, const extended_symbol& to, bool reverse = false) {
       const double S = token(to.get_contract()).get_supply(to.get_symbol().code()).quantity.amount; 
       const double C = balance.amount;
       const double dC = from.quantity.amount;
@@ -106,12 +107,15 @@ struct connector {
       if (dS < 0) dS = 0;
 
       auto conversion_rate = ((int64_t)dS) / dS;
-      balance += { from.quantity.amount - int64_t(from.quantity.amount * (1 - conversion_rate)), from.quantity.symbol };
+      auto delta = asset{ from.quantity.amount - int64_t(from.quantity.amount * (1 - conversion_rate)), from.quantity.symbol };
 
-      return { {int64_t(dS), to}, conversion_rate };
+      if (!reverse) balance += delta;
+      else balance -= delta;
+
+      return { {int64_t(dS), to}, delta, conversion_rate };
    }
 
-   converted convert_from_smart(const extended_asset& from, const extended_symbol& to) {
+   converted convert_from_smart(const extended_asset& from, const extended_symbol& to, bool reverse = false) {
       const double C = balance.amount;
       const double S = token(from.contract).get_supply(from.quantity.symbol.code()).quantity.amount;
       const double dS = -from.quantity.amount;
@@ -119,9 +123,20 @@ struct connector {
       double dC = C * (std::pow(1. + dS / S, double(1) / weight) - 1.);
       if (dC > 0) dC = 0;
 
-      balance.amount -= int64_t(-dC);
+      auto delta = asset{ int64_t(-dC), balance.symbol };
 
-      return { {int64_t(-dC), to}, ((int64_t)-dC) / (-dC) };
+      if (!reverse) balance -= delta;
+      else balance += delta;
+
+      return { {int64_t(-dC), to}, delta, ((int64_t)-dC) / (-dC) };
+   }
+
+   converted convert_to_exact_smart(const extended_symbol& from, const extended_asset& to) {
+      return convert_from_smart(to, from, true);
+   }
+
+   converted convert_exact_from_smart(const extended_symbol& from, const extended_asset& to) {
+      return convert_to_smart(to, from, true);
    }
 
    uint64_t primary_key() const { return smart.get_symbol().code().raw(); }

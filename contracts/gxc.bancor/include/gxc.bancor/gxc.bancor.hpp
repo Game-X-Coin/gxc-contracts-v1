@@ -14,10 +14,11 @@ public:
    };
 
    struct base_config {
-      asset connected; // if amount != 0, it's considered as fixed amount of conversion fee
       uint16_t rate; // permyriad
+      asset connected; // if amount != 0, it's considered as fixed amount of conversion fee
 
       bool is_exempted()const { return connected.amount == 0 && rate == 0; }
+
       extended_asset get_fee(extended_asset value)const {
          int64_t fee = 0;
          if (rate != 0) {
@@ -28,7 +29,17 @@ public:
          return {fee, value.get_extended_symbol()};
       }
 
-      EOSLIB_SERIALIZE(base_config, (connected)(rate))
+      extended_asset get_required_fee(extended_asset value)const {
+         int64_t fee = 0;
+         if (rate != 0) {
+            int64_t p = 10000 / rate;
+            fee = int64_t((value.quantity.amount + connected.amount) * p / double(p - 1) + 0.9) - value.quantity.amount;
+         }
+         fee += connected.amount;
+         return {fee, value.get_extended_symbol()};
+      }
+
+      EOSLIB_SERIALIZE(base_config, (rate)(connected))
    };
 
    struct [[eosio::table]] charge_policy : base_config {
@@ -40,13 +51,13 @@ public:
    };
 
    struct [[eosio::table]] config : base_config {
-      name owner;
       name connected_contract;
+      name owner;
 
       extended_asset get_connected()const { return { connected, connected_contract }; }
       extended_symbol get_connected_symbol()const { return { connected.symbol, connected_contract }; }
 
-      EOSLIB_SERIALIZE_DERIVED(config, base_config, (owner)(connected_contract))
+      EOSLIB_SERIALIZE_DERIVED(config, base_config, (connected_contract)(owner))
    };
 
    typedef multi_index<"connector"_n, connector> connectors;
@@ -67,6 +78,9 @@ public:
 
    [[eosio::action]]
    void setowner(name owner);
+
+private:
+   extended_asset get_fee(const extended_asset& value, const extended_asset& smart, const config& c, bool required = false);
 };
 
 } /// namespace gxc
