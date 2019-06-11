@@ -1,7 +1,7 @@
 #include <eosio/eosio.hpp>
 #include <eosio/asset.hpp>
 #include <eoslib/crypto.hpp>
-#include <gxclib/symbol.hpp>
+#include <eoslib/symbol.hpp>
 
 using namespace eosio;
 using std::string;
@@ -30,7 +30,7 @@ public:
       uint32_t min_duration;
 
       static uint64_t hash(extended_asset value) {
-         auto sym_code = extended_symbol_code(value.quantity.symbol, value.contract);
+         auto sym_code = extended_symbol_code(value.quantity.symbol.code(), value.contract);
          return xxh64(reinterpret_cast<const char*>(&sym_code), sizeof(uint128_t));
       }
       uint64_t primary_key()const { return config::hash(min_amount); }
