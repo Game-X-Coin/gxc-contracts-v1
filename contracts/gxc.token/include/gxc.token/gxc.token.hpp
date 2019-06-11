@@ -10,7 +10,7 @@
 #include <eosio/asset.hpp>
 #include <eosio/system.hpp>
 
-#include <gxclib/symbol.hpp>
+#include <eoslib/symbol.hpp>
 #include <gxclib/action.hpp>
 
 using namespace eosio;
@@ -81,7 +81,7 @@ namespace gxc {
       // ACTION LIST END
 
       static uint64_t get_token_id(const extended_asset& value) {
-         auto sym_code = extended_symbol_code(value.quantity.symbol, value.contract);
+         auto sym_code = extended_symbol_code(value.quantity.symbol.code(), value.contract);
          return token_hash(reinterpret_cast<const char*>(&sym_code), sizeof(uint128_t));
       }
 
@@ -200,7 +200,7 @@ namespace gxc {
 
          static uint64_t get_approval_id(name spender, extended_asset value) {
             std::array<char,24> raw;
-            auto sym_code = extended_symbol_code(value.quantity.symbol, value.contract).raw();
+            auto sym_code = extended_symbol_code(value.quantity.symbol.code(), value.contract).raw();
             datastream<char*> ds(raw.data(), raw.size());
             ds << spender;
             ds << sym_code;
