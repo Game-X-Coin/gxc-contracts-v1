@@ -32,9 +32,9 @@ void reserve::mint(extended_asset derivative, extended_asset underlying, std::ve
 
    check(it == rsv.end(), "additional issuance not supported yet");
    rsv.emplace(_self, [&](auto& r) {
-      r.derivative = derivative.quantity;
-      r.issuer     = derivative.contract;
+      r.derivative = derivative;
       r.underlying = underlying.quantity;
+      r.rate = underlying.quantity.amount / double(derivative.quantity.amount);
    });
 
    // TODO: check allowance
@@ -45,35 +45,26 @@ void reserve::mint(extended_asset derivative, extended_asset underlying, std::ve
    token(token_account).mint(derivative, opts);
 }
 
-void reserve::claim(name owner, extended_asset value) {
-   check(value.quantity.amount > 0, "invalid quantity");
-   require_auth(owner);
+#ifdef TARGET_TESTNET
+void reserve::migrate(extended_symbol derivative) {
+   using namespace eosio::internal_use_do_not_use;
 
-   reserves rsv(_self, value.contract.value);
-   const auto& it = rsv.get(value.quantity.symbol.code().raw(), "underlying asset not found");
+   uint64_t code = _self.value;
+   uint64_t scope = derivative.get_contract().value;
+   uint64_t table = "reserve"_n.value;
+   uint64_t id = derivative.get_symbol().code().raw();
 
-   auto ul_amount = get_float_amount(it.underlying);
-   auto de_amount = get_float_amount(it.derivative);
+   uint32_t it = db_find_i64(code, scope, table, id);
+   check(it != db_end_i64(code, scope, table), "not found");
 
-   const auto ratio = ul_amount / de_amount;
-   auto claimed_amount = ratio * get_float_amount(value.quantity);
-   check(claimed_amount > 0, "minimum amount for claim not satisfied");
+   currency_reserves c;
+   size_t size = db_get_i64(it, (char*)&c, sizeof(c));
 
-   auto claimed_asset = asset(static_cast<int64_t>(claimed_amount * pow(10, it.underlying.symbol.precision())), it.underlying.symbol);
+   if (size == sizeof(c)) return;
 
-   // adjust input amount
-   value.quantity.amount = static_cast<int64_t>(get_float_amount(claimed_asset) / ratio * pow(10, it.derivative.symbol.precision()));
-
-   // transfer token
-   token(_self).transfer(owner, _self, value, "claim reserve");
-   token(_self).transfer(_self, basename(value.contract), value, "claim reserve");
-   token(token_account).burn(value, "claim reserve");
-   token(_self).transfer(_self, owner, extended_asset(claimed_asset, system_account), "claim reserve");
-
-   rsv.modify(it, same_payer, [&](auto& r) {
-      r.derivative -= value.quantity;
-      r.underlying -= claimed_asset;
-   });
+   c.rate = c.underlying.amount / double(c.derivative.quantity.amount);
+   db_update_i64(it, 0, (char*)&c, sizeof(c));
 }
+#endif
 
 } /// namespace gxc

@@ -23,20 +23,22 @@ public:
    [[eosio::action]]
    void mint(extended_asset derivative, extended_asset underlying, std::vector<key_value> opts);
 
-   [[eosio::action]]
-   void claim(name owner, extended_asset value);
-
    struct [[eosio::table("reserve"), eosio::contract("gxc.reserve")]] currency_reserves {
-      asset derivative;
-      name  issuer;
+      extended_asset derivative;
       asset underlying;
+      double rate;
 
-      uint64_t primary_key()const { return derivative.symbol.code().raw(); }
+      uint64_t primary_key()const { return derivative.quantity.symbol.code().raw(); }
 
-      EOSLIB_SERIALIZE( currency_reserves, (derivative)(issuer)(underlying) )
+      EOSLIB_SERIALIZE( currency_reserves, (derivative)(underlying)(rate) )
    };
 
    typedef multi_index<"reserve"_n, currency_reserves> reserves;
+
+#ifdef TARGET_TESTNET
+   [[eosio::action]]
+   void migrate(extended_symbol derivative);
+#endif
 };
 
 }
