@@ -16,6 +16,7 @@ using namespace eosio;
 using std::string;
 
 namespace gxc {
+
 class [[eosio::contract("gxc.account")]] account_contract : public contract {
 public:
    using contract::contract;

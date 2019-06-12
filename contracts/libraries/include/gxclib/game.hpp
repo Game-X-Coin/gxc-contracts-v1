@@ -11,9 +11,9 @@ namespace gxc {
 using eosio::name;
 using eosio::check;
 
-constexpr name game_account = "gxc.game"_n;
+constexpr name game_account = "gxc.account"_n;
 
-   struct [[eosio::table, eosio::contract("gxc.game")]] game {
+   struct [[eosio::table, eosio::contract("gxc.account")]] game {
       name        name; /**< Game account name */
       std::string uri;  /**< Game metadata */
 
