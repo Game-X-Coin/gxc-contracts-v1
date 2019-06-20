@@ -34,7 +34,8 @@ void reserve::mint(extended_asset derivative, extended_asset underlying, std::ve
    rsv.emplace(_self, [&](auto& r) {
       r.derivative = derivative;
       r.underlying = underlying.quantity;
-      r.rate = underlying.quantity.amount / double(derivative.quantity.amount);
+      r.rate = underlying.quantity.amount * std::pow(10, derivative.quantity.symbol.precision())
+             / double(derivative.quantity.amount) / std::pow(10, underlying.quantity.symbol.precision());
    });
 
    // TODO: check allowance
@@ -43,6 +44,29 @@ void reserve::mint(extended_asset derivative, extended_asset underlying, std::ve
 
    // create derivative token
    token(token_account).mint(derivative, opts);
+}
+
+void reserve::claim(name owner, extended_asset value) {
+   check(value.quantity.amount > 0, "invalid quantity");
+   require_auth(owner);
+
+   reserves rsv(_self, value.contract.value);
+   const auto& it = rsv.get(value.quantity.symbol.code().raw(), "underlying asset not found");
+
+   double dC = value.quantity.amount * it.rate / pow(10, value.quantity.symbol.precision() - it.underlying.symbol.precision());
+   if (dC < 0) dC = 0;
+
+   auto claimed_asset = asset(int64_t(dC), it.underlying.symbol);
+
+   token(_self).transfer(owner, _self, value, "claim reserve");
+   token(_self).transfer(_self, basename(value.contract), value, "claim reserve");
+   token(token_account).burn(value, "claim reserve");
+   token(_self).transfer(_self, owner, extended_asset(claimed_asset, system_account), "claim reserve");
+
+   rsv.modify(it, same_payer, [&](auto& r) {
+      r.derivative -= value;
+      r.underlying -= claimed_asset;
+   });
 }
 
 #ifdef TARGET_TESTNET
