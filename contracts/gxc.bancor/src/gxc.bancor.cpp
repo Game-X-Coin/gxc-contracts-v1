@@ -56,6 +56,26 @@ void bancor_contract::convert(name sender, extended_asset from, extended_asset t
             auto smart_issued = c.convert_to_smart(quant_after_fee, to.get_extended_symbol());
             check(smart_issued.value.quantity.amount > 0, "paid token not enough for conversion");
 
+            auto rsv = reserve(to.get_extended_symbol());
+            if (rsv) {
+               double unit_price = smart_issued.delta.amount * pow(10, smart_issued.value.quantity.symbol.precision())
+                                 / double(smart_issued.value.quantity.amount) / pow(10, smart_issued.delta.symbol.precision());
+               double rate = rsv.get_rate();
+               if (rate > unit_price) {
+                  c.balance -= smart_issued.delta;
+
+                  double dS = quant_after_fee.quantity.amount / rate / pow(10, from.quantity.symbol.precision() - to.quantity.symbol.precision());
+                  if (dS < 0) dS = 0;
+
+                  auto conversion_rate = ((int64_t)dS) / dS;
+                  smart_issued.value.quantity.amount = int64_t(dS);
+                  smart_issued.delta.amount = quant_after_fee.quantity.amount - int64_t(quant_after_fee.quantity.amount * (1 - conversion_rate));
+                  smart_issued.ratio = conversion_rate;
+
+                  c.balance += smart_issued.delta;
+               }
+            }
+
             if ((quant_after_fee.quantity - smart_issued.delta).amount > 0) {
                auto overcharged = int64_t(fee.quantity.amount * (1 - smart_issued.ratio));
                if (overcharged < 0) overcharged = 0;
@@ -72,6 +92,27 @@ void bancor_contract::convert(name sender, extended_asset from, extended_asset t
             dlog("effective_price = ", asset(smart_issued.delta.amount * pow(10, smart_issued.value.quantity.symbol.precision()) / smart_issued.value.quantity.amount, from.quantity.symbol));
          } else {
             auto connected_required = c.convert_to_exact_smart(from.get_extended_symbol(), to);
+
+            auto rsv = reserve(to.get_extended_symbol());
+            if (rsv) {
+               double unit_price = connected_required.delta.amount * pow(10, to.quantity.symbol.precision())
+                                 / double(to.quantity.amount) / pow(10, connected_required.delta.symbol.precision());
+               double rate = rsv.get_rate();
+               if (rate > unit_price) {
+                  c.balance -= connected_required.delta;
+
+                  double dC = to.quantity.amount * rate / pow(10, to.quantity.symbol.precision() - from.quantity.symbol.precision());
+                  if (dC < 0) dC = 0;
+
+                  auto conversion_rate = ((int64_t)dC) / dC;
+                  connected_required.value.quantity.amount = int64_t(dC);
+                  connected_required.delta.amount = int64_t(dC);
+                  connected_required.ratio = conversion_rate;
+
+                  c.balance += connected_required.delta;
+               }
+            }
+
             auto fee = get_fee({connected_required.delta, connected_required.value.contract}, to, cfg.get(), true);
 
             token(from.contract, _self).transfer(sender, _self, extended_asset{connected_required.delta, from.contract} + fee, "bancor conversion");
@@ -92,6 +133,28 @@ void bancor_contract::convert(name sender, extended_asset from, extended_asset t
       conn.modify(it, same_payer, [&](auto& c) {
          if (to.quantity.amount == 0) {
             auto connected_out = c.convert_from_smart(from, cfg.get().get_connected_symbol());
+
+            bool need_burn = false;
+            auto rsv = reserve(from.get_extended_symbol());
+            if (rsv) {
+               double unit_price = connected_out.delta.amount * pow(10, from.quantity.symbol.precision())
+                                 / double(from.quantity.amount) / pow(10, connected_out.delta.symbol.precision());
+               double rate = rsv.get_rate();
+               if (rate > unit_price) {
+                  c.balance += connected_out.delta;
+
+                  double dC = from.quantity.amount * rate / pow(10, from.quantity.symbol.precision() - to.quantity.symbol.precision());
+                  if (dC < 0) dC = 0;
+
+                  auto conversion_rate = ((int64_t)dC) / dC;
+                  connected_out.value.quantity.amount = int64_t(dC);
+                  connected_out.delta.amount = int64_t(dC);
+                  connected_out.ratio = conversion_rate;
+
+                  need_burn = true;
+               }
+            }
+
             auto fee = get_fee(connected_out.value, from, cfg.get());
 
             auto quant_after_fee = connected_out.value - fee;
@@ -99,7 +162,12 @@ void bancor_contract::convert(name sender, extended_asset from, extended_asset t
 
             auto refund = extended_asset{int64_t(from.quantity.amount * (1 - connected_out.ratio)), from.get_extended_symbol()};
             token(from.contract, _self).transfer(sender, _self, from - refund);
-            token(from.contract, _self).transfer(_self, null_account, from - refund);
+            if (!need_burn) {
+               token(from.contract, _self).transfer(_self, null_account, from - refund);
+            } else {
+               token(from.contract, _self).approve(_self, reserve::reserve_account, from - refund);
+               rsv.claim(_self, from - refund);
+            }
             token(cfg.get().connected_contract, _self).transfer(_self, sender, quant_after_fee);
             if (fee.quantity.amount > 0) {
                token(cfg.get().connected_contract, _self).transfer(_self, cfg.get().owner, fee, "conversion fee");
@@ -107,12 +175,38 @@ void bancor_contract::convert(name sender, extended_asset from, extended_asset t
             dlog("effective_price = ", asset(connected_out.delta.amount * pow(10, from.quantity.symbol.precision()) / (from.quantity.amount - refund.quantity.amount), connected_out.value.quantity.symbol));
          } else {
             auto fee = get_fee(to, from, cfg.get(), true);
-
             auto smart_required = c.convert_exact_from_smart(from.get_extended_symbol(), to + fee);
+
+            bool need_burn = false;
+            auto rsv = reserve(from.get_extended_symbol());
+            if (rsv) {
+               double unit_price = smart_required.delta.amount * pow(10, smart_required.value.quantity.symbol.precision())
+                                 / double(smart_required.value.quantity.amount) / pow(10, smart_required.delta.symbol.precision());
+               double rate = rsv.get_rate();
+               if (rate > unit_price) {
+                  c.balance += smart_required.delta;
+
+                  double dS = to.quantity.amount / rate / pow(10, to.quantity.symbol.precision() - from.quantity.symbol.precision());
+                  if (dS < 0) dS = 0;
+
+                  auto conversion_rate = ((int64_t)dS) / dS;
+                  smart_required.value.quantity.amount = int64_t(dS);
+                  smart_required.delta.amount = to.quantity.amount - int64_t(to.quantity.amount * (1 - conversion_rate));
+                  smart_required.ratio = conversion_rate;
+
+                  need_burn = true;
+               }
+            }
+
             to.quantity = smart_required.delta - fee.quantity;
 
             token(from.contract, _self).transfer(sender, _self, smart_required.value);
-            token(from.contract, _self).transfer(_self, null_account, smart_required.value);
+            if (!need_burn) {
+               token(from.contract, _self).transfer(_self, null_account, smart_required.value);
+            } else {
+               token(from.contract, _self).approve(_self, reserve::reserve_account, smart_required.value);
+               rsv.claim(_self, smart_required.value);
+            }
             token(to.contract, _self).transfer(_self, sender, to);
             if (fee.quantity.amount > 0) {
                token(to.contract, _self).transfer(_self, cfg.get().owner, fee, "conversion fee");

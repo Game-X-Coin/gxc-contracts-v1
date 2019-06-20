@@ -20,9 +20,6 @@ public:
    using contract::contract;
    using key_value = std::pair<std::string, std::vector<int8_t>>;
 
-   [[eosio::action]]
-   void mint(extended_asset derivative, extended_asset underlying, std::vector<key_value> opts);
-
    struct [[eosio::table("reserve"), eosio::contract("gxc.reserve")]] currency_reserves {
       extended_asset derivative;
       asset underlying;
@@ -34,6 +31,12 @@ public:
    };
 
    typedef multi_index<"reserve"_n, currency_reserves> reserves;
+
+   [[eosio::action]]
+   void mint(extended_asset derivative, extended_asset underlying, std::vector<key_value> opts);
+
+   [[eosio::action]]
+   void claim(name owner, extended_asset value);
 
 #ifdef TARGET_TESTNET
    [[eosio::action]]

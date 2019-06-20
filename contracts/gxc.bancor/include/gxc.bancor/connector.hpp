@@ -9,9 +9,11 @@ using std::string;
 
 namespace eosio {
 
-constexpr name token_account = "gxc.token"_n;
+constexpr name active_permission{"active"_n};
 
 struct token {
+   static constexpr name token_account = "gxc.token"_n;
+
    struct [[eosio::table("stat"), eosio::contract("gxc.token")]] currency_stats {
       asset    supply;      // 16
    private:
@@ -69,8 +71,6 @@ struct token {
       return {st.supply, st.issuer};
    }
 
-   static constexpr name active_permission{"active"_n};
-
    token(name c, name auth = name()) {
       contract = c;
       if (auth != name())
@@ -83,7 +83,60 @@ struct token {
       action_wrapper<"transfer"_n, &token::transfer>(token_account, auths).send(from, to, value, memo);
    }
 
+   void approve(name owner, name spender, extended_asset value) {
+      if (auths.empty())
+         auths.emplace_back(permission_level(owner, active_permission));
+      action_wrapper<"approve"_n, &token::approve>(token_account, auths).send(owner, spender, value);
+   }
+
    name contract; // issuer
+   std::vector<permission_level> auths;
+};
+
+struct reserve {
+   static constexpr name reserve_account = "gxc.reserve"_n;
+
+   struct [[eosio::table("reserve"), eosio::contract("gxc.reserve")]] currency_reserves {
+      extended_asset derivative;
+      asset underlying;
+      double rate;
+
+      uint64_t primary_key()const { return derivative.quantity.symbol.code().raw(); }
+
+      EOSLIB_SERIALIZE( currency_reserves, (derivative)(underlying)(rate) )
+   };
+
+   typedef multi_index<"reserve"_n, currency_reserves> reserves;
+
+   operator bool() { return has_reserve(); }
+
+   bool has_reserve() {
+      reserves rsv(reserve_account, derivative.get_contract().value);
+      auto it = rsv.find(derivative.get_symbol().code().raw());
+      return it != rsv.end();
+   }
+
+   double get_rate() {
+      reserves rsv(reserve_account, derivative.get_contract().value);
+      auto it = rsv.find(derivative.get_symbol().code().raw());
+      if (it != rsv.end())
+         return it->rate;
+      return 0.;
+   }
+
+   reserve(extended_symbol d, name auth = name()) {
+      derivative = d;
+      if (auth != name())
+         auths.emplace_back(permission_level(auth, active_permission));
+   }
+
+   void claim(name owner, extended_asset value) {
+      if (auths.empty())
+         auths.emplace_back(permission_level(owner, active_permission));
+      action_wrapper<"claim"_n, &reserve::claim>(reserve_account, auths).send(owner, value);
+   }
+
+   extended_symbol derivative;
    std::vector<permission_level> auths;
 };
 
