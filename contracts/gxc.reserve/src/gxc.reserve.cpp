@@ -84,9 +84,8 @@ void reserve::migrate(extended_symbol derivative) {
    currency_reserves c;
    size_t size = db_get_i64(it, (char*)&c, sizeof(c));
 
-   if (size == sizeof(c)) return;
-
-   c.rate = c.underlying.amount / double(c.derivative.quantity.amount);
+   c.rate = c.underlying.amount * pow(10, c.derivative.quantity.symbol.precision())
+          / double(c.derivative.quantity.amount) / pow(10, c.underlying.symbol.precision());
    db_update_i64(it, 0, (char*)&c, sizeof(c));
 }
 #endif
