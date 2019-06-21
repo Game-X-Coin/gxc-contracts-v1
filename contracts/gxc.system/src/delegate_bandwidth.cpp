@@ -399,4 +399,13 @@ void system_contract::refund( const name owner ) {
    refunds_tbl.erase( req );
 }
 
+void system_contract::setramgift(uint8_t kbytes) {
+   require_auth(_self);
+#ifdef TARGET_MAINNET
+   _gstate.ram_gift_kbytes = kbytes;
+#else
+   check(false, "not possible to adjust ram gift in testnet");
+#endif
+}
+
 }
