@@ -8,14 +8,16 @@
 #include <eosio/system.hpp>
 #include <eosio/crypto.hpp>
 #include <utf8/utf8.h>
+
 #include <gxclib/system.hpp>
+#include <gxclib/game.hpp>
 
 using namespace eosio;
 using std::string;
 
 namespace gxc {
 
-class [[eosio::contract("gxc.user")]] user_contract : public contract {
+class [[eosio::contract("gxc.account")]] account_contract : public contract {
 public:
    using contract::contract;
 
@@ -29,6 +31,12 @@ public:
    void setnick(name account_name, string nickname);
 
    [[eosio::action]]
+   void setgame(name name, bool activated);
+
+   [[eosio::action]]
+   void seturi(name name, std::string uri);
+
+   [[eosio::action]]
    void rmvnick(name account_name);
 
    [[eosio::action]]
@@ -36,7 +44,7 @@ public:
 
    void authenticate(name account_name, name game_name, const string& login_token);
 
-   struct [[eosio::table, eosio::contract("gxc.user")]] nickrow {
+   struct [[eosio::table, eosio::contract("gxc.account")]] nickrow {
       name    account_name;
       string  nickname;
       string  title;

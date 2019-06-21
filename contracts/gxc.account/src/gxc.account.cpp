@@ -2,11 +2,40 @@
  * @file
  * @copyright defined in gxc/LICENSE
  */
-#include <gxc.user/gxc.user.hpp>
+#include <gxc.account/gxc.account.hpp>
 
 namespace gxc {
 
-void user_contract::authenticate(name account_name, name game_name, const string& login_token) {
+void account_contract::setgame(name name, bool activated) {
+   require_auth(_self);
+
+   games gms(_self, _self.value);
+   auto it = gms.find(name.value);
+
+   if (activated) {
+      check(it == gms.end(), "already registered game");
+      gms.emplace(_self, [&](auto& g) {
+         g.name = name;
+      });
+   } else {
+      check(it != gms.end(), "not registered game");
+      gms.erase(it);
+   }
+}
+
+void account_contract::seturi(name name, std::string uri) {
+   require_auth(name);
+
+   games gms(_self, _self.value);
+   auto it = gms.find(name.value);
+
+   check(it != gms.end(), "game account is not found");
+   gms.modify(it, same_payer, [&](auto& g) {
+      g.uri = uri;
+   });
+}
+
+void account_contract::authenticate(name account_name, name game_name, const string& login_token) {
    check(login_token.size() == 16, "login_token has invalid length");
    require_auth(account_name);
 
@@ -14,15 +43,15 @@ void user_contract::authenticate(name account_name, name game_name, const string
    check(current_time_point().sec_since_epoch() <= expire_time, "login_token is expired");
 }
 
-void user_contract::login(name account_name, name game_name, string login_token) {
+void account_contract::login(name account_name, name game_name, string login_token) {
    authenticate(account_name, game_name, login_token);
 }
 
-void user_contract::connect(name account_name, name game_name, string login_token) {
+void account_contract::connect(name account_name, name game_name, string login_token) {
    authenticate(account_name, game_name, login_token);
 }
 
-void user_contract::setnick(name account_name, string nickname) {
+void account_contract::setnick(name account_name, string nickname) {
    check(nickname.size() >= 6 && nickname.size() <= 24, "nickname has invalid length");
    check(is_valid_nickname(nickname), "nickname contains invalid character");
 
@@ -50,7 +79,7 @@ void user_contract::setnick(name account_name, string nickname) {
    }
 }
 
-void user_contract::rmvnick(name account_name) {
+void account_contract::rmvnick(name account_name) {
    check(false, "nickname removal not supported");
 
    // control flow should not reach here
@@ -64,7 +93,7 @@ void user_contract::rmvnick(name account_name) {
    nt.erase(itr);
 }
 
-void user_contract::payram4nick(name account_name) {
+void account_contract::payram4nick(name account_name) {
    require_auth(account_name);
 
    nicktable nt(_self, _self.value);
