@@ -26,8 +26,7 @@ namespace gxc {
       public:
          using contract::contract;
 
-         static constexpr name user_account {"gxc.user"_n};
-         static constexpr name game_account {"gxc.game"_n};
+         static constexpr name user_account {"gxc.account"_n};
          static constexpr name reserve_account {"gxc.reserve"_n};
          static constexpr name token_account {"gxc.token"_n};
 
@@ -43,12 +42,6 @@ namespace gxc {
             action_newaccount(_self, {_self, active_permission})
             .send(_self,
                   user_account,
-                  system_active,
-                  system_active);
-
-            action_newaccount(_self, {_self, active_permission})
-            .send(_self,
-                  game_account,
                   system_active,
                   system_active);
 

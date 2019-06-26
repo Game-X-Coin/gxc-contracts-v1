@@ -2,8 +2,6 @@
  * @file
  * @copyright defined in gxc/LICENSE
  */
-#include <gxclib/exchange_state.hpp>
-
 #include <cmath>
 
 namespace gxc {

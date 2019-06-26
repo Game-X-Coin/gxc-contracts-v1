@@ -32,9 +32,10 @@ void reserve::mint(extended_asset derivative, extended_asset underlying, std::ve
 
    check(it == rsv.end(), "additional issuance not supported yet");
    rsv.emplace(_self, [&](auto& r) {
-      r.derivative = derivative.quantity;
-      r.issuer     = derivative.contract;
+      r.derivative = derivative;
       r.underlying = underlying.quantity;
+      r.rate = underlying.quantity.amount * std::pow(10, derivative.quantity.symbol.precision())
+             / double(derivative.quantity.amount) / std::pow(10, underlying.quantity.symbol.precision());
    });
 
    // TODO: check allowance
@@ -52,28 +53,41 @@ void reserve::claim(name owner, extended_asset value) {
    reserves rsv(_self, value.contract.value);
    const auto& it = rsv.get(value.quantity.symbol.code().raw(), "underlying asset not found");
 
-   auto ul_amount = get_float_amount(it.underlying);
-   auto de_amount = get_float_amount(it.derivative);
+   double dC = value.quantity.amount * it.rate / pow(10, value.quantity.symbol.precision() - it.underlying.symbol.precision());
+   if (dC < 0) dC = 0;
 
-   const auto ratio = ul_amount / de_amount;
-   auto claimed_amount = ratio * get_float_amount(value.quantity);
-   check(claimed_amount > 0, "minimum amount for claim not satisfied");
+   auto claimed_asset = asset(int64_t(dC), it.underlying.symbol);
 
-   auto claimed_asset = asset(static_cast<int64_t>(claimed_amount * pow(10, it.underlying.symbol.precision())), it.underlying.symbol);
-
-   // adjust input amount
-   value.quantity.amount = static_cast<int64_t>(get_float_amount(claimed_asset) / ratio * pow(10, it.derivative.symbol.precision()));
-
-   // transfer token
    token(_self).transfer(owner, _self, value, "claim reserve");
    token(_self).transfer(_self, basename(value.contract), value, "claim reserve");
    token(token_account).burn(value, "claim reserve");
    token(_self).transfer(_self, owner, extended_asset(claimed_asset, system_account), "claim reserve");
 
    rsv.modify(it, same_payer, [&](auto& r) {
-      r.derivative -= value.quantity;
+      r.derivative -= value;
       r.underlying -= claimed_asset;
    });
 }
+
+#ifdef TARGET_TESTNET
+void reserve::migrate(extended_symbol derivative) {
+   using namespace eosio::internal_use_do_not_use;
+
+   uint64_t code = _self.value;
+   uint64_t scope = derivative.get_contract().value;
+   uint64_t table = "reserve"_n.value;
+   uint64_t id = derivative.get_symbol().code().raw();
+
+   uint32_t it = db_find_i64(code, scope, table, id);
+   check(it != db_end_i64(code, scope, table), "not found");
+
+   currency_reserves c;
+   size_t size = db_get_i64(it, (char*)&c, sizeof(c));
+
+   c.rate = c.underlying.amount * pow(10, c.derivative.quantity.symbol.precision())
+          / double(c.derivative.quantity.amount) / pow(10, c.underlying.symbol.precision());
+   db_update_i64(it, 0, (char*)&c, sizeof(c));
+}
+#endif
 
 } /// namespace gxc

@@ -8,7 +8,7 @@
 #include <eosio/asset.hpp>
 #include <eosio/action.hpp>
 #include <eoslib/crypto.hpp>
-#include "symbol.hpp"
+#include <eoslib/symbol.hpp>
 
 #include <cmath>
 
@@ -34,7 +34,11 @@ asset get_balance(name owner, name issuer, symbol_code sym_code) {
    asset balance;
    auto esc = extended_symbol_code(sym_code, issuer);
    db_get_i64(db_find_i64(token_account.value, issuer.value, "accounts"_n.value,
-                          xxh3_64(reinterpret_cast<const char*>(&esc), sizeof(uint128_t))),
+#ifdef TARGET_TESTNET
+                          fasthash64(reinterpret_cast<const char*>(&esc), sizeof(uint128_t))),
+#else
+                          xxh64(reinterpret_cast<const char*>(&esc), sizeof(uint128_t))),
+#endif
               reinterpret_cast<void*>(&balance), sizeof(asset));
    return balance;
 }

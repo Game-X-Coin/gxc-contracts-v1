@@ -39,9 +39,15 @@ namespace gxc {
          if (_it->scheduled_time > current_time_point()) break;
 
          _token.get_account(code()).sub_balance(_it->value());
-         _token.get_account(owner()).paid_by(owner()).add_balance(_it->value());
 
-         withdraw_processed(code(), {code(), active_permission}).send(owner(), _it->value());
+         auto _owner = _token.get_account(owner());
+         if (!_owner->option(account::opt::frozen)) {
+            _owner.paid_by(owner()).add_balance(_it->value());
+            withdraw_processed(code(), {code(), active_permission}).send(owner(), _it->value());
+         } else {
+            _owner.skip_validation().add_deposit(_it->value());
+            withdraw_reverted(code(), {code(), active_permission}).send(owner(), _it->value());
+         }
 
          _idx.erase(_it);
       }

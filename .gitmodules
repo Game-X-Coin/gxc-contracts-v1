@@ -1,3 +1,0 @@
-[submodule "contracts/libraries/eoslib"]
-	path = contracts/libraries/eoslib
-	url = https://github.com/conr2d/eoslib
